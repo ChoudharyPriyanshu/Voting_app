@@ -26,34 +26,16 @@ export default function Dashboard() {
         }
     };
 
-    const handleVote = async (candidateName) => {
+    const handleVote = async (candidateId) => {
         if (user?.isVoted) return;
 
-        // We need to find candidate by name/party, but the list endpoint doesn't return IDs.
-        // We'll use a workaround: fetch full candidates data from vote/count and match
         try {
-            setVoting(candidateName);
+            setVoting(candidateId);
             setMessage({ type: '', text: '' });
 
-            // Get candidates list with a broader endpoint if available
-            // Since the /candidate/list endpoint only returns name and party,
-            // and we need the candidateID for voting, we'll need to get it differently
-            // The vote endpoint needs candidate ObjectId
-            // Let's try fetching from the vote/count endpoint to match
-            const response = await api.get('/candidate/vote/count');
-            const allCandidates = response.data;
-
-            // Unfortunately, the API list endpoints don't expose IDs.
-            // We need a direct voting approach. Let me search candidates properly.
-            // Actually, looking at the backend, the list and count endpoints don't have IDs.
-            // Let's fetch the full list - if the API has that.
-            // As a workaround, we'll need to match by party name.
-
-            // Since the backend doesn't expose candidate IDs in the list endpoint,
-            // we'll need the admin to share candidate IDs, or we modify the approach.
-            // For now, let's assume we can get candidate details somehow.
-
-            setMessage({ type: 'error', text: 'Voting requires candidate IDs. Please check with administrator.' });
+            await api.post(`/candidate/vote/${candidateId}`);
+            setMessage({ type: 'success', text: 'Your vote has been recorded successfully!' });
+            await refreshProfile();
         } catch (err) {
             setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to cast vote.' });
         } finally {
@@ -109,8 +91,8 @@ export default function Dashboard() {
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className={`flex items-center gap-3 p-4 rounded-2xl border mb-8 text-sm ${message.type === 'error'
-                                ? 'bg-danger/10 border-danger/20 text-danger'
-                                : 'bg-success/10 border-success/20 text-success'
+                            ? 'bg-danger/10 border-danger/20 text-danger'
+                            : 'bg-success/10 border-success/20 text-success'
                             }`}
                     >
                         {message.type === 'error' ? (
@@ -171,12 +153,12 @@ export default function Dashboard() {
                                     <button
                                         disabled={user?.isVoted || voting !== null}
                                         className={`w-full mt-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 cursor-pointer ${user?.isVoted
-                                                ? 'bg-surface-light/50 text-text-muted cursor-not-allowed'
-                                                : 'bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 hover:shadow-primary/30'
+                                            ? 'bg-surface-light/50 text-text-muted cursor-not-allowed'
+                                            : 'bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 hover:shadow-primary/30'
                                             } disabled:opacity-50 disabled:cursor-not-allowed`}
-                                        onClick={() => handleVote(c.name)}
+                                        onClick={() => handleVote(c._id)}
                                     >
-                                        {voting === c.name ? (
+                                        {voting === c._id ? (
                                             <span className="flex items-center justify-center gap-2">
                                                 <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                                 Voting…
