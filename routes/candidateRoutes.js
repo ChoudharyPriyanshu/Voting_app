@@ -2,73 +2,51 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
 const Candidate = require('../models/candidate');
+const Election = require('../models/election');
 const { jwtAuthMiddleware, generateToken } = require('../jwt');
 
 // function to check whether admin or not 
 const checkAdminRole = async (userID) => {
     try {
         const user = await User.findById(userID);
-        return user.role === 'admin'
-    }
-    catch (err) {
+        return user.role === 'admin';
+    } catch (err) {
         return false;
     }
-}
-//POST route to add a candidate
-router.post('/', jwtAuthMiddleware, async (req, res) => {
+};
 
-    if (! await checkAdminRole(req.user.id)) {
+// POST route to add a candidate (must include election field)
+router.post('/', jwtAuthMiddleware, async (req, res) => {
+    if (!await checkAdminRole(req.user.id)) {
         return res.status(403).json({ message: 'user has not admin role' });
     }
 
     try {
-        const data = req.body //assuming the request body contains candidate data
+        const data = req.body;
 
-        // create the new candidate document using mongoose model
-        const newCandidate = new Candidate(data);
-
-        // save the new candidate to the database
-        const savedCandidate = await newCandidate.save();
-        console.log('data saved');
-
-        const payload = {
-            id: savedCandidate.id
-
+        // Verify election exists
+        if (!data.election) {
+            return res.status(400).json({ message: 'election field is required' });
+        }
+        const election = await Election.findById(data.election);
+        if (!election) {
+            return res.status(404).json({ message: 'election not found' });
         }
 
-        console.log(JSON.stringify(payload));
-        const Token = generateToken(payload);
-        console.log('Token is:', Token);
+        const newCandidate = new Candidate(data);
+        const savedCandidate = await newCandidate.save();
+        console.log('candidate saved');
 
-        return res.status(200).json({ response: savedCandidate, Token });
-    }
-    catch (err) {
+        return res.status(200).json({ response: savedCandidate });
+    } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'internal server error' });
     }
-})
+});
 
-
-// profile route
-router.get('/profile', jwtAuthMiddleware, async (req, res) => {
-    try {
-        const userData = req.user;
-        const userId = userData.id;
-        const user = await User.findById(userId);
-        res.status(200).json({ user });
-    }
-    catch (err) {
-        console.log(err);
-        return res.status(401).json({ error: 'internal server error' });
-    }
-})
-
-
-// 
-
+// Update candidate (admin only)
 router.put('/:candidateId', jwtAuthMiddleware, async (req, res) => {
-
-    if (! await checkAdminRole(req.user.id)) {
+    if (!await checkAdminRole(req.user.id)) {
         return res.status(403).json({ message: 'user has not admin role' });
     }
 
@@ -77,135 +55,123 @@ router.put('/:candidateId', jwtAuthMiddleware, async (req, res) => {
         const updatedCandidateData = req.body;
 
         const response = await Candidate.findByIdAndUpdate(candidateId, updatedCandidateData, {
-            new: true, //Return The Updated Data
-            runValidators: true //Run Mongoose Validations 
+            new: true,
+            runValidators: true
         });
 
         if (!response) {
-            return res.status(404).json({ error: 'candidate not found' })
+            return res.status(404).json({ error: 'candidate not found' });
         }
-        console.log('data updated');
+        console.log('candidate updated');
         res.status(200).json(response);
-
-    }
-    catch (err) {
+    } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'internal server error' });
     }
-})
+});
 
-//delete
+// Delete candidate (admin only)
 router.delete('/:candidateID', jwtAuthMiddleware, async (req, res) => {
-
-    if (! await checkAdminRole(req.user.id)) {
-        return res.sendStatus(403).json({ message: 'user has not admin role' });
+    if (!await checkAdminRole(req.user.id)) {
+        return res.status(403).json({ message: 'user has not admin role' });
     }
 
     try {
         const candidateID = req.params.candidateID;
         const response = await Candidate.findByIdAndDelete(candidateID);
         if (!response) {
-            return res.status(404).json({ error: 'candidate not found' })
+            return res.status(404).json({ error: 'candidate not found' });
         }
 
-        console.log('data deleted');
+        console.log('candidate deleted');
         res.status(200).json({ message: 'candidate deleted successfully' });
-    }
-    catch (err) {
+    } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'internal server error' });
     }
-})
+});
 
-
-// let's start vote
+// Vote for a candidate (scoped to election)
 router.post('/vote/:candidateID', jwtAuthMiddleware, async (req, res) => {
-    // no admin can vote 
-    // user can only vote once 
-    candidateID = req.params.candidateID
-    userID = req.user.id
+    const candidateID = req.params.candidateID;
+    const userID = req.user.id;
+
     try {
-        // find the candidate document by specified candidatID
-        const candidate = await Candidate.findById(candidateID)
+        const candidate = await Candidate.findById(candidateID);
         if (!candidate) {
-            res.status(404).json({ message: "candidate not found" })
-        }
-        const user = await User.findById(userID)
-        console.log(user.role)
-        if (!user) {
-            return res.status(404).json({ message: "user  not found" })
-        }
-        if (user.isVoted) {
-            return res.status(404).json({ message: "you have already voted" })
-        }
-        if (user.role == 'admin') {
-            return res.status(404).json({ message: "admin is not allowed to vote" })
+            return res.status(404).json({ message: 'candidate not found' });
         }
 
-        // update the candidate document to record vote
-        candidate.votes.push({ user: userID })
+        const electionId = candidate.election;
+
+        const user = await User.findById(userID);
+        if (!user) {
+            return res.status(404).json({ message: 'user not found' });
+        }
+        if (user.role === 'admin') {
+            return res.status(403).json({ message: 'admin is not allowed to vote' });
+        }
+
+        // Check if user already voted in THIS election
+        if (user.votedElections && user.votedElections.some(e => e.toString() === electionId.toString())) {
+            return res.status(400).json({ message: 'you have already voted in this election' });
+        }
+
+        // Record vote on candidate
+        candidate.votes.push({ user: userID });
         candidate.voteCount++;
         await candidate.save();
 
-        // update the user document 
-        user.isVoted = true
-        await user.save()
+        // Mark election as voted for this user
+        user.votedElections.push(electionId);
+        await user.save();
 
-        return res.status(200).json({ message: "vote recorded successfully" })
-    }
-    catch (err) {
+        return res.status(200).json({ message: 'vote recorded successfully' });
+    } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'internal server error' });
     }
+});
 
-})
-
-
-// vote count 
-router.get('/vote/count', async (req, res) => {
+// Vote count for a specific election
+router.get('/vote/count/:electionId', async (req, res) => {
     try {
-        // find all candidates and sort them by votecount in descending order
-        const candidates = await Candidate.find().sort({ voteCount: 'desc' })
+        const candidates = await Candidate.find({ election: req.params.electionId })
+            .sort({ voteCount: 'desc' });
 
-        // map the candidate to return only name and  votecount
         const voteRecord = candidates.map((data) => {
             return {
                 party: data.party,
+                name: data.name,
                 count: data.voteCount
-            }
-
+            };
         });
 
-        return res.status(200).json(voteRecord)
-    }
-    catch (err) {
+        return res.status(200).json(voteRecord);
+    } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'internal server error' });
     }
-})
+});
 
-// list of candidates 
-router.get('/list', async (req, res) => {
+// List candidates for a specific election
+router.get('/list/:electionId', async (req, res) => {
     try {
-        // find all candidates 
-        const candidates = await Candidate.find()
+        const candidates = await Candidate.find({ election: req.params.electionId });
 
-        // map the candidate to return only name and party
         const LIST = candidates.map((data) => {
             return {
                 _id: data._id,
                 party: data.party,
-                name: data.name
-            }
-
+                name: data.name,
+                age: data.age
+            };
         });
-        return res.status(200).json(LIST)
-
-    }
-    catch (err) {
+        return res.status(200).json(LIST);
+    } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'internal server error' });
     }
-})
+});
 
 module.exports = router;

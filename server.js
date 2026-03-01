@@ -1,6 +1,6 @@
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000 ;
+const PORT = process.env.PORT || 3000;
 require('dotenv').config();
 const db = require('./db');
 
@@ -10,14 +10,16 @@ app.use(bodyParser.json());
 const jwtAuthMiddleware = require('./jwt');
 //import the router files
 const userRoutes = require('./routes/userRoutes');
- const candidateRoutes = require('./routes/candidateRoutes');
+const candidateRoutes = require('./routes/candidateRoutes');
+const electionRoutes = require('./routes/electionRoutes');
 
 //use the router 
-app.use('/user',userRoutes);
-app.use('/candidate',candidateRoutes); 
+app.use('/user', userRoutes);
+app.use('/candidate', candidateRoutes);
+app.use('/election', electionRoutes);
 
 
-app.listen(PORT  ,()=>{
-    console.log('server is listening at 3000 port');
-   
-  });
+app.listen(PORT, () => {
+  console.log('server is listening at 3000 port');
+
+});

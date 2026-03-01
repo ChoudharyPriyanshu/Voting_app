@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import api from '../api/axios';
-import { BarChart3, Trophy, RefreshCw } from 'lucide-react';
+import { BarChart3, Trophy, RefreshCw, ChevronDown } from 'lucide-react';
 
 const barColors = [
     { bar: 'linear-gradient(90deg, #6366f1, #818cf8)', glow: 'rgba(99, 102, 241, 0.3)' },
@@ -13,31 +13,64 @@ const barColors = [
 ];
 
 export default function Results() {
+    const [elections, setElections] = useState([]);
+    const [selectedElectionId, setSelectedElectionId] = useState('');
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadingResults, setLoadingResults] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
-    const fetchResults = async (isRefresh = false) => {
-        if (isRefresh) setRefreshing(true);
+    useEffect(() => {
+        fetchElections();
+    }, []);
+
+    const fetchElections = async () => {
         try {
-            const { data } = await api.get('/candidate/vote/count');
-            setResults(data);
+            const { data } = await api.get('/election');
+            setElections(data);
+            // Auto-select first election if available
+            if (data.length > 0) {
+                setSelectedElectionId(data[0]._id);
+                fetchResults(data[0]._id);
+            }
         } catch {
             // silently fail
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchResults = async (electionId, isRefresh = false) => {
+        if (!electionId) return;
+        if (isRefresh) setRefreshing(true);
+        else setLoadingResults(true);
+        try {
+            const { data } = await api.get(`/candidate/vote/count/${electionId}`);
+            setResults(data);
+        } catch {
+            setResults([]);
+        } finally {
+            setLoadingResults(false);
             setRefreshing(false);
         }
     };
 
+    const handleElectionChange = (e) => {
+        const id = e.target.value;
+        setSelectedElectionId(id);
+        fetchResults(id);
+    };
+
+    // Auto-refresh every 10s
     useEffect(() => {
-        fetchResults();
-        const interval = setInterval(() => fetchResults(), 10000);
+        if (!selectedElectionId) return;
+        const interval = setInterval(() => fetchResults(selectedElectionId), 10000);
         return () => clearInterval(interval);
-    }, []);
+    }, [selectedElectionId]);
 
     const maxVotes = Math.max(...results.map((r) => r.count), 1);
     const totalVotes = results.reduce((sum, r) => sum + r.count, 0);
+    const selectedElection = elections.find(e => e._id === selectedElectionId);
 
     return (
         <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6">
@@ -47,7 +80,7 @@ export default function Results() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5 }}
-                    className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10"
+                    className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8"
                 >
                     <div>
                         <h1
@@ -61,8 +94,8 @@ export default function Results() {
                         </p>
                     </div>
                     <button
-                        onClick={() => fetchResults(true)}
-                        disabled={refreshing}
+                        onClick={() => fetchResults(selectedElectionId, true)}
+                        disabled={refreshing || !selectedElectionId}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-border hover:border-primary/40 hover:bg-surface-light/40 transition-all duration-200 text-text-muted hover:text-text cursor-pointer disabled:opacity-50"
                         aria-label="Refresh results"
                     >
@@ -71,24 +104,58 @@ export default function Results() {
                     </button>
                 </motion.div>
 
-                {/* Total Votes Card */}
+                {/* Election Selector */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 15 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1 }}
-                    className="flex items-center gap-4 p-5 rounded-2xl border border-border bg-card backdrop-blur-md mb-8"
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                    className="mb-8"
                 >
-                    <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
-                        <BarChart3 className="w-6 h-6 text-primary-light" />
-                    </div>
-                    <div>
-                        <p className="text-sm text-text-muted">Total Votes Cast</p>
-                        <p className="text-2xl font-bold">{totalVotes}</p>
+                    <label htmlFor="electionSelect" className="block text-sm font-medium text-text-muted mb-2">
+                        Select Election
+                    </label>
+                    <div className="relative">
+                        <select
+                            id="electionSelect"
+                            value={selectedElectionId}
+                            onChange={handleElectionChange}
+                            className="w-full px-4 py-3 rounded-xl border border-border bg-card text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all duration-200 text-sm appearance-none cursor-pointer"
+                            style={{
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M4.646 5.646a.5.5 0 0 1 .708 0L8 8.293l2.646-2.647a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 14px center',
+                            }}
+                        >
+                            {elections.length === 0 && <option value="">No elections available</option>}
+                            {elections.map((el) => (
+                                <option key={el._id} value={el._id}>
+                                    {el.title} ({el.status})
+                                </option>
+                            ))}
+                        </select>
                     </div>
                 </motion.div>
 
+                {/* Total Votes Card */}
+                {selectedElectionId && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.15 }}
+                        className="flex items-center gap-4 p-5 rounded-2xl border border-border bg-card backdrop-blur-md mb-8"
+                    >
+                        <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
+                            <BarChart3 className="w-6 h-6 text-primary-light" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-text-muted">Total Votes Cast</p>
+                            <p className="text-2xl font-bold">{totalVotes}</p>
+                        </div>
+                    </motion.div>
+                )}
+
                 {/* Results */}
-                {loading ? (
+                {loading || loadingResults ? (
                     <div className="flex items-center justify-center py-20">
                         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
@@ -106,7 +173,7 @@ export default function Results() {
 
                             return (
                                 <motion.div
-                                    key={r.party}
+                                    key={`${r.party}-${r.name}`}
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ duration: 0.4, delay: i * 0.08 }}
@@ -114,27 +181,24 @@ export default function Results() {
                                 >
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
-                                            {isLeading && (
-                                                <Trophy className="w-5 h-5 text-accent" />
-                                            )}
-                                            <span className="font-semibold text-base">{r.party}</span>
+                                            {isLeading && <Trophy className="w-5 h-5 text-accent" />}
+                                            <div>
+                                                <span className="font-semibold text-base">{r.name}</span>
+                                                <span className="text-text-muted text-sm ml-2">({r.party})</span>
+                                            </div>
                                         </div>
                                         <span className="text-sm font-bold tabular-nums">
                                             {r.count} vote{r.count !== 1 ? 's' : ''}
                                         </span>
                                     </div>
 
-                                    {/* Bar */}
                                     <div className="h-3 rounded-full bg-surface-light/60 overflow-hidden">
                                         <motion.div
                                             initial={{ width: 0 }}
                                             animate={{ width: `${percent}%` }}
                                             transition={{ duration: 0.8, delay: i * 0.08, ease: 'easeOut' }}
                                             className="h-full rounded-full"
-                                            style={{
-                                                background: color.bar,
-                                                boxShadow: `0 0 12px ${color.glow}`,
-                                            }}
+                                            style={{ background: color.bar, boxShadow: `0 0 12px ${color.glow}` }}
                                         />
                                     </div>
                                 </motion.div>

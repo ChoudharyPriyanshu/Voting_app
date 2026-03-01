@@ -96,14 +96,14 @@ export default function Profile() {
                             <div className="flex items-center gap-3 mt-1">
                                 <span className="text-sm text-text-muted capitalize">{user?.role}</span>
                                 <span className="text-text-muted/30">•</span>
-                                <span className={`flex items-center gap-1 text-sm ${user?.isVoted ? 'text-success' : 'text-text-muted'}`}>
-                                    {user?.isVoted ? (
+                                <span className={`flex items-center gap-1 text-sm ${user?.votedElections?.length > 0 ? 'text-success' : 'text-text-muted'}`}>
+                                    {user?.votedElections?.length > 0 ? (
                                         <>
-                                            <CheckCircle className="w-3.5 h-3.5" /> Voted
+                                            <CheckCircle className="w-3.5 h-3.5" /> Voted in {user.votedElections.length} election{user.votedElections.length !== 1 ? 's' : ''}
                                         </>
                                     ) : (
                                         <>
-                                            <XCircle className="w-3.5 h-3.5" /> Not voted
+                                            <XCircle className="w-3.5 h-3.5" /> Not voted yet
                                         </>
                                     )}
                                 </span>
@@ -149,8 +149,8 @@ export default function Profile() {
                             initial={{ opacity: 0, y: -8 }}
                             animate={{ opacity: 1, y: 0 }}
                             className={`flex items-center gap-3 p-3.5 rounded-xl border text-sm mb-5 ${message.type === 'error'
-                                    ? 'bg-danger/10 border-danger/20 text-danger'
-                                    : 'bg-success/10 border-success/20 text-success'
+                                ? 'bg-danger/10 border-danger/20 text-danger'
+                                : 'bg-success/10 border-success/20 text-success'
                                 }`}
                             role="alert"
                         >

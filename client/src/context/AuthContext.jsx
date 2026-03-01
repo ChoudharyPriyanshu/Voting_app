@@ -33,7 +33,6 @@ export function AuthProvider({ children }) {
         const { data } = await api.post('/user/login', { aadharCardNumber: Number(aadharCardNumber), password });
         localStorage.setItem('voting_token', data.token);
         setToken(data.token);
-        // Fetch profile after setting token
         const profile = await api.get('/user/profile', {
             headers: { Authorization: `Bearer ${data.token}` },
         });
@@ -68,6 +67,12 @@ export function AuthProvider({ children }) {
         }
     };
 
+    // Check if user has voted in a specific election
+    const hasVotedInElection = (electionId) => {
+        if (!user?.votedElections) return false;
+        return user.votedElections.some(e => (e._id || e).toString() === electionId.toString());
+    };
+
     const value = {
         user,
         token,
@@ -78,6 +83,7 @@ export function AuthProvider({ children }) {
         signup,
         logout,
         refreshProfile,
+        hasVotedInElection,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

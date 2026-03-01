@@ -9,6 +9,7 @@ export default defineConfig({
         proxy: {
             '/user': 'http://localhost:3000',
             '/candidate': 'http://localhost:3000',
+            '/election': 'http://localhost:3000',
         },
     },
 });
