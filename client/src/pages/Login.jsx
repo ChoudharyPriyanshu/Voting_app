@@ -1,28 +1,26 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { Vote, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Vote, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
     const { login } = useAuth();
     const navigate = useNavigate();
     const [form, setForm] = useState({ aadharCardNumber: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-        setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
 
         if (!form.aadharCardNumber || !form.password) {
-            setError('Please fill in all fields.');
+            toast.error('Please fill in all fields.');
             return;
         }
 
@@ -31,7 +29,7 @@ export default function Login() {
             const user = await login(form.aadharCardNumber, form.password);
             navigate(user.role === 'admin' ? '/admin/candidates' : '/dashboard');
         } catch (err) {
-            setError(err.response?.data?.error || 'Login failed. Please try again.');
+            toast.error(err.response?.data?.error || 'Login failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -74,17 +72,7 @@ export default function Login() {
                     className="p-6 sm:p-8 rounded-2xl border border-border bg-card backdrop-blur-md space-y-5"
                     noValidate
                 >
-                    {error && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex items-start gap-3 p-3.5 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm"
-                            role="alert"
-                        >
-                            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                            {error}
-                        </motion.div>
-                    )}
+
 
                     {/* Aadhar */}
                     <div>

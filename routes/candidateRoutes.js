@@ -104,6 +104,22 @@ router.post('/vote/:candidateID', jwtAuthMiddleware, async (req, res) => {
 
         const electionId = candidate.election;
 
+        // Check election timing
+        const election = await Election.findById(electionId);
+        if (!election) {
+            return res.status(404).json({ message: 'election not found' });
+        }
+        if (election.status === 'completed') {
+            return res.status(400).json({ message: 'this election has ended' });
+        }
+        const now = new Date();
+        if (election.startDate && now < new Date(election.startDate)) {
+            return res.status(400).json({ message: 'this election has not started yet' });
+        }
+        if (election.endDate && now > new Date(election.endDate)) {
+            return res.status(400).json({ message: 'this election has ended' });
+        }
+
         const user = await User.findById(userID);
         if (!user) {
             return res.status(404).json({ message: 'user not found' });

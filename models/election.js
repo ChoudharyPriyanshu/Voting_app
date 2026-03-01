@@ -9,6 +9,14 @@ const electionSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    startDate: {
+        type: Date,
+        default: null
+    },
+    endDate: {
+        type: Date,
+        default: null
+    },
     status: {
         type: String,
         enum: ['active', 'completed'],

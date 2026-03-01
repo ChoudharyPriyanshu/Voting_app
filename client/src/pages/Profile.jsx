@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import {
@@ -14,7 +15,6 @@ import {
     XCircle,
     Eye,
     EyeOff,
-    AlertCircle,
     Lock,
 } from 'lucide-react';
 
@@ -23,29 +23,27 @@ export default function Profile() {
     const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '' });
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
-    const [message, setMessage] = useState({ type: '', text: '' });
     const [loading, setLoading] = useState(false);
 
     const handlePasswordChange = async (e) => {
         e.preventDefault();
-        setMessage({ type: '', text: '' });
 
         if (!passwordForm.currentPassword || !passwordForm.newPassword) {
-            setMessage({ type: 'error', text: 'Please fill in both fields.' });
+            toast.error('Please fill in both fields.');
             return;
         }
         if (passwordForm.newPassword.length < 4) {
-            setMessage({ type: 'error', text: 'New password must be at least 4 characters.' });
+            toast.error('New password must be at least 4 characters.');
             return;
         }
 
         setLoading(true);
         try {
             await api.put('/user/profile/password', passwordForm);
-            setMessage({ type: 'success', text: 'Password updated successfully!' });
+            toast.success('Password updated successfully!');
             setPasswordForm({ currentPassword: '', newPassword: '' });
         } catch (err) {
-            setMessage({ type: 'error', text: err.response?.data?.error || 'Failed to update password.' });
+            toast.error(err.response?.data?.error || 'Failed to update password.');
         } finally {
             setLoading(false);
         }
@@ -144,24 +142,7 @@ export default function Profile() {
                         </div>
                     </div>
 
-                    {message.text && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className={`flex items-center gap-3 p-3.5 rounded-xl border text-sm mb-5 ${message.type === 'error'
-                                ? 'bg-danger/10 border-danger/20 text-danger'
-                                : 'bg-success/10 border-success/20 text-success'
-                                }`}
-                            role="alert"
-                        >
-                            {message.type === 'error' ? (
-                                <AlertCircle className="w-4 h-4 shrink-0" />
-                            ) : (
-                                <CheckCircle className="w-4 h-4 shrink-0" />
-                            )}
-                            {message.text}
-                        </motion.div>
-                    )}
+
 
                     <form onSubmit={handlePasswordChange} className="space-y-4">
                         <div>

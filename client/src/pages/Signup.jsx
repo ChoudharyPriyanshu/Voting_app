@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { UserPlus, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { UserPlus, Eye, EyeOff } from 'lucide-react';
 
 const initialForm = {
     name: '',
@@ -20,29 +21,25 @@ export default function Signup() {
     const navigate = useNavigate();
     const [form, setForm] = useState(initialForm);
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleChange = (e) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-        setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
 
-        // Basic validation
         if (!form.name || !form.age || !form.address || !form.aadharCardNumber || !form.password) {
-            setError('Please fill in all required fields.');
+            toast.error('Please fill in all required fields.');
             return;
         }
         if (form.aadharCardNumber.length !== 12) {
-            setError('Aadhar Card Number must be exactly 12 digits.');
+            toast.error('Aadhar Card Number must be exactly 12 digits.');
             return;
         }
         if (form.password.length < 4) {
-            setError('Password must be at least 4 characters.');
+            toast.error('Password must be at least 4 characters.');
             return;
         }
 
@@ -51,7 +48,7 @@ export default function Signup() {
             await signup(form);
             navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.error || err.response?.data?.message || 'Signup failed. Please try again.');
+            toast.error(err.response?.data?.error || err.response?.data?.message || 'Signup failed. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -100,17 +97,7 @@ export default function Signup() {
                     className="p-6 sm:p-8 rounded-2xl border border-border bg-card backdrop-blur-md space-y-4"
                     noValidate
                 >
-                    {error && (
-                        <motion.div
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex items-start gap-3 p-3.5 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm"
-                            role="alert"
-                        >
-                            <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                            {error}
-                        </motion.div>
-                    )}
+
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {fields.map((f) => (
