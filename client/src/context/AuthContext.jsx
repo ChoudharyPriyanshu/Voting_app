@@ -31,6 +31,15 @@ export function AuthProvider({ children }) {
 
     const login = async (aadharCardNumber, password) => {
         const { data } = await api.post('/user/login', { aadharCardNumber: Number(aadharCardNumber), password });
+
+        // If needs verification, throw with email info
+        if (data.needsVerification) {
+            const err = new Error('Email not verified');
+            err.needsVerification = true;
+            err.email = data.email;
+            throw err;
+        }
+
         localStorage.setItem('voting_token', data.token);
         setToken(data.token);
         const profile = await api.get('/user/profile', {
@@ -46,10 +55,8 @@ export function AuthProvider({ children }) {
             aadharCardNumber: Number(userData.aadharCardNumber),
             age: Number(userData.age),
         });
-        localStorage.setItem('voting_token', data.token);
-        setToken(data.token);
-        setUser(data.response);
-        return data.response;
+        // New flow: signup returns needsVerification, not token
+        return data;
     };
 
     const logout = () => {
@@ -59,15 +66,19 @@ export function AuthProvider({ children }) {
     };
 
     const refreshProfile = async () => {
+        const t = localStorage.getItem('voting_token');
+        if (!t) return;
         try {
-            const { data } = await api.get('/user/profile');
+            setToken(t);
+            const { data } = await api.get('/user/profile', {
+                headers: { Authorization: `Bearer ${t}` },
+            });
             setUser(data.user);
         } catch {
             // silently fail
         }
     };
 
-    // Check if user has voted in a specific election
     const hasVotedInElection = (electionId) => {
         if (!user?.votedElections) return false;
         return user.votedElections.some(e => (e._id || e).toString() === electionId.toString());

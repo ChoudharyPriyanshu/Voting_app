@@ -7,6 +7,7 @@ import AdminRoute from './components/AdminRoute';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import VerifyOTP from './pages/VerifyOTP';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Results from './pages/Results';

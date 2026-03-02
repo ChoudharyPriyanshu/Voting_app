@@ -17,6 +17,7 @@
     "lodash": "^4.17.21",
     "mongodb": "^6.8.1",
     "mongoose": "^8.4.4",
+    "nodemailer": "^8.0.1",
     "nodemon": "^3.1.4",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0"
