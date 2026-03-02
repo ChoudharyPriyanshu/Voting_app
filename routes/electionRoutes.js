@@ -113,4 +113,107 @@ router.delete('/:id', jwtAuthMiddleware, async (req, res) => {
     }
 });
 
+// GET — Detailed stats for an election (total voters, participation, vote timeline)
+router.get('/:id/stats', async (req, res) => {
+    try {
+        const election = await Election.findById(req.params.id);
+        if (!election) return res.status(404).json({ message: 'election not found' });
+
+        // All candidates for this election
+        const candidates = await Candidate.find({ election: req.params.id });
+
+        // Total registered voters (verified, non-admin)
+        const totalRegisteredVoters = await User.countDocuments({ role: 'voter', isVerified: true });
+
+        // Total votes cast in this election
+        const totalVotes = candidates.reduce((sum, c) => sum + c.voteCount, 0);
+
+        // Participation rate
+        const participationRate = totalRegisteredVoters > 0
+            ? ((totalVotes / totalRegisteredVoters) * 100).toFixed(1)
+            : '0.0';
+
+        // Per-candidate breakdown
+        const candidateStats = candidates
+            .sort((a, b) => b.voteCount - a.voteCount)
+            .map(c => ({
+                _id: c._id,
+                name: c.name,
+                party: c.party,
+                voteCount: c.voteCount,
+                votePercent: totalVotes > 0 ? ((c.voteCount / totalVotes) * 100).toFixed(1) : '0.0',
+            }));
+
+        // Vote timeline — bucket votes by hour using votedAt timestamps
+        const allVotes = candidates.flatMap(c => c.votes.map(v => ({ votedAt: v.votedAt })));
+        allVotes.sort((a, b) => new Date(a.votedAt) - new Date(b.votedAt));
+
+        // Group by hour bucket
+        const timelineMap = {};
+        allVotes.forEach(v => {
+            const d = new Date(v.votedAt);
+            // Round down to hour
+            d.setMinutes(0, 0, 0);
+            const key = d.toISOString();
+            timelineMap[key] = (timelineMap[key] || 0) + 1;
+        });
+        const voteTimeline = Object.entries(timelineMap).map(([time, count]) => ({ time, count }));
+
+        res.status(200).json({
+            election,
+            totalRegisteredVoters,
+            totalVotes,
+            participationRate: parseFloat(participationRate),
+            candidateStats,
+            voteTimeline,
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: 'internal server error' });
+    }
+});
+
+// GET — Voter turnout for an election (admin only)
+router.get('/:id/turnout', jwtAuthMiddleware, async (req, res) => {
+    if (!await checkAdminRole(req.user.id)) {
+        return res.status(403).json({ message: 'admin only' });
+    }
+
+    try {
+        const election = await Election.findById(req.params.id);
+        if (!election) return res.status(404).json({ message: 'election not found' });
+
+        // All registered voters
+        const voters = await User.find({ role: 'voter', isVerified: true })
+            .select('name email aadharCardNumber votedElections');
+
+        const totalRegisteredVoters = voters.length;
+        const votedVoters = voters.filter(u =>
+            u.votedElections.some(e => e.toString() === req.params.id)
+        );
+        const notVotedVoters = voters.filter(u =>
+            !u.votedElections.some(e => e.toString() === req.params.id)
+        );
+
+        res.status(200).json({
+            election,
+            totalRegisteredVoters,
+            votedCount: votedVoters.length,
+            notVotedCount: notVotedVoters.length,
+            participationRate: totalRegisteredVoters > 0
+                ? parseFloat(((votedVoters.length / totalRegisteredVoters) * 100).toFixed(1))
+                : 0,
+            voters: voters.map(u => ({
+                _id: u._id,
+                name: u.name,
+                email: u.email,
+                hasVoted: u.votedElections.some(e => e.toString() === req.params.id),
+            })),
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: 'internal server error' });
+    }
+});
+
 module.exports = router;

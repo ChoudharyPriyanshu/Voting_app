@@ -27,7 +27,10 @@ export default function Navbar() {
     const navLinks = isAuthenticated
         ? [
             ...(isAdmin
-                ? [{ to: '/admin/candidates', label: 'Manage Candidates', icon: Shield }]
+                ? [
+                    { to: '/admin/dashboard', label: 'Dashboard', icon: BarChart3 },
+                    { to: '/admin/candidates', label: 'Manage', icon: Shield },
+                ]
                 : [{ to: '/dashboard', label: 'Dashboard', icon: Home }]),
             { to: '/results', label: 'Results', icon: BarChart3 },
             { to: '/profile', label: 'Profile', icon: User },

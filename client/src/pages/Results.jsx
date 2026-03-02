@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { BarChart3, Trophy, RefreshCw, ChevronDown } from 'lucide-react';
+import { BarChart3, Trophy, RefreshCw, TrendingUp } from 'lucide-react';
 
 const barColors = [
     { bar: 'linear-gradient(90deg, #6366f1, #818cf8)', glow: 'rgba(99, 102, 241, 0.3)' },
@@ -13,6 +14,7 @@ const barColors = [
 ];
 
 export default function Results() {
+    const navigate = useNavigate();
     const [elections, setElections] = useState([]);
     const [selectedElectionId, setSelectedElectionId] = useState('');
     const [results, setResults] = useState([]);
@@ -93,15 +95,26 @@ export default function Results() {
                             Real-time vote count • Auto-refreshes every 10s
                         </p>
                     </div>
-                    <button
-                        onClick={() => fetchResults(selectedElectionId, true)}
-                        disabled={refreshing || !selectedElectionId}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-border hover:border-primary/40 hover:bg-surface-light/40 transition-all duration-200 text-text-muted hover:text-text cursor-pointer disabled:opacity-50"
-                        aria-label="Refresh results"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {selectedElectionId && (
+                            <button
+                                onClick={() => navigate(`/election/${selectedElectionId}/stats`)}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-border hover:border-primary/40 hover:bg-primary/5 hover:text-primary-light transition-all duration-200 text-text-muted cursor-pointer"
+                            >
+                                <TrendingUp className="w-4 h-4" />
+                                Detailed Stats
+                            </button>
+                        )}
+                        <button
+                            onClick={() => fetchResults(selectedElectionId, true)}
+                            disabled={refreshing || !selectedElectionId}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium border border-border hover:border-primary/40 hover:bg-surface-light/40 transition-all duration-200 text-text-muted hover:text-text cursor-pointer disabled:opacity-50"
+                            aria-label="Refresh results"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </button>
+                    </div>
                 </motion.div>
 
                 {/* Election Selector */}

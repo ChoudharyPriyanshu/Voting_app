@@ -11,7 +11,9 @@ import VerifyOTP from './pages/VerifyOTP';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Results from './pages/Results';
+import ElectionStats from './pages/ElectionStats';
 import ManageCandidates from './pages/admin/ManageCandidates';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 export default function App() {
     return (
@@ -23,6 +25,7 @@ export default function App() {
                         <Route path="/" element={<Landing />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/signup" element={<Signup />} />
+                        <Route path="/verify-otp" element={<VerifyOTP />} />
                         <Route path="/results" element={<Results />} />
                         <Route
                             path="/dashboard"
@@ -46,6 +49,22 @@ export default function App() {
                                 <AdminRoute>
                                     <ManageCandidates />
                                 </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/dashboard"
+                            element={
+                                <AdminRoute>
+                                    <AdminDashboard />
+                                </AdminRoute>
+                            }
+                        />
+                        <Route
+                            path="/election/:id/stats"
+                            element={
+                                <ProtectedRoute>
+                                    <ElectionStats />
+                                </ProtectedRoute>
                             }
                         />
                     </Routes>

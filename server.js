@@ -12,11 +12,13 @@ const jwtAuthMiddleware = require('./jwt');
 const userRoutes = require('./routes/userRoutes');
 const candidateRoutes = require('./routes/candidateRoutes');
 const electionRoutes = require('./routes/electionRoutes');
+const exportRoutes = require('./routes/exportRoutes');
 
 //use the router 
 app.use('/user', userRoutes);
 app.use('/candidate', candidateRoutes);
 app.use('/election', electionRoutes);
+app.use('/election', exportRoutes);
 
 
 app.listen(PORT, () => {

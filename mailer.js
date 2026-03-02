@@ -1,14 +1,6 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-});
-
 // Generate 6-digit OTP
 function generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -16,6 +8,17 @@ function generateOTP() {
 
 // Send OTP email
 async function sendOTPEmail(to, otp) {
+    // Create lazily so dotenv env vars are guaranteed to be loaded
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.EMAIL_USER,
+            pass: process.env.EMAIL_PASS,
+        },
+    });
+
+    console.log('Sending OTP via:', process.env.EMAIL_USER);
+
     const mailOptions = {
         from: `"VoteApp" <${process.env.EMAIL_USER}>`,
         to,

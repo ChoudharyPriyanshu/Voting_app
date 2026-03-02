@@ -30,7 +30,7 @@ export default function Signup() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!form.name || !form.age || !form.address || !form.aadharCardNumber || !form.password) {
+        if (!form.name || !form.age || !form.address || !form.aadharCardNumber || !form.password || !form.email) {
             toast.error('Please fill in all required fields.');
             return;
         }
@@ -45,8 +45,13 @@ export default function Signup() {
 
         setLoading(true);
         try {
-            await signup(form);
-            navigate('/dashboard');
+            const data = await signup(form);
+            if (data.needsVerification) {
+                toast.success('Account created! Check your email for the OTP.');
+                navigate('/verify-otp', { state: { email: form.email } });
+            } else {
+                navigate('/dashboard');
+            }
         } catch (err) {
             toast.error(err.response?.data?.error || err.response?.data?.message || 'Signup failed. Please try again.');
         } finally {
@@ -58,7 +63,7 @@ export default function Signup() {
         { name: 'name', label: 'Full Name', type: 'text', placeholder: 'Enter your full name', required: true },
         { name: 'age', label: 'Age', type: 'number', placeholder: 'Your age', required: true, inputMode: 'numeric' },
         { name: 'mobile', label: 'Mobile', type: 'tel', placeholder: 'Mobile number (optional)' },
-        { name: 'email', label: 'Email', type: 'email', placeholder: 'Email address (optional)' },
+        { name: 'email', label: 'Email', type: 'email', placeholder: 'Email address (for OTP verification)', required: true },
         { name: 'address', label: 'Address', type: 'text', placeholder: 'Your address', required: true },
         { name: 'aadharCardNumber', label: 'Aadhar Card Number', type: 'text', placeholder: '12-digit Aadhar number', required: true, maxLength: 12, inputMode: 'numeric' },
     ];
