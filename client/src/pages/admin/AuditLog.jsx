@@ -41,11 +41,12 @@ export default function AuditLog() {
             const params = new URLSearchParams({ page: pg, limit: 20 });
             if (action) params.append('action', action);
             const { data } = await api.get(`/audit?${params}`);
-            setLogs(data.logs);
-            setTotalPages(data.totalPages);
-            setPage(data.page);
+            setLogs(data.logs || []);
+            setTotalPages(data.totalPages || 1);
+            setPage(data.page || 1);
         } catch {
             toast.error('Failed to load audit logs.');
+            setLogs([]);
         } finally {
             setLoading(false);
         }
