@@ -3,6 +3,7 @@ const router = express.Router();
 const Election = require('../models/election');
 const Candidate = require('../models/candidate');
 const User = require('../models/user');
+const AuditLog = require('../models/auditLog');
 const { jwtAuthMiddleware } = require('../jwt');
 
 // Helper: check admin role
@@ -30,6 +31,19 @@ router.post('/', jwtAuthMiddleware, async (req, res) => {
         const newElection = new Election({ title, description });
         const saved = await newElection.save();
         console.log('Election created:', saved.title);
+
+        // Audit log
+        const admin = await User.findById(req.user.id);
+        await AuditLog.create({
+            action: 'election_created',
+            adminId: req.user.id,
+            adminName: admin?.name || 'Admin',
+            targetType: 'election',
+            targetId: saved._id,
+            targetName: saved.title,
+            details: `Created election "${saved.title}"`,
+        });
+
         res.status(200).json(saved);
     } catch (err) {
         console.log(err);
@@ -83,6 +97,22 @@ router.put('/:id', jwtAuthMiddleware, async (req, res) => {
             return res.status(404).json({ message: 'election not found' });
         }
         console.log('Election updated:', updated.title);
+
+        // Audit log
+        const admin = await User.findById(req.user.id);
+        const hasStatusChange = req.body.status !== undefined;
+        await AuditLog.create({
+            action: hasStatusChange ? 'election_status_changed' : 'election_updated',
+            adminId: req.user.id,
+            adminName: admin?.name || 'Admin',
+            targetType: 'election',
+            targetId: updated._id,
+            targetName: updated.title,
+            details: hasStatusChange
+                ? `Changed election "${updated.title}" status to ${updated.status}`
+                : `Updated election "${updated.title}"`,
+        });
+
         res.status(200).json(updated);
     } catch (err) {
         console.log(err);
@@ -106,6 +136,19 @@ router.delete('/:id', jwtAuthMiddleware, async (req, res) => {
         await Candidate.deleteMany({ election: req.params.id });
 
         console.log('Election deleted:', election.title);
+
+        // Audit log
+        const admin = await User.findById(req.user.id);
+        await AuditLog.create({
+            action: 'election_deleted',
+            adminId: req.user.id,
+            adminName: admin?.name || 'Admin',
+            targetType: 'election',
+            targetId: req.params.id,
+            targetName: election.title,
+            details: `Deleted election "${election.title}" and all its candidates`,
+        });
+
         res.status(200).json({ message: 'election and its candidates deleted successfully' });
     } catch (err) {
         console.log(err);

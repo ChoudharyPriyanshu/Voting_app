@@ -16,6 +16,8 @@ import {
     Eye,
     EyeOff,
     Lock,
+    Search,
+    Loader2,
 } from 'lucide-react';
 
 export default function Profile() {
@@ -24,6 +26,31 @@ export default function Profile() {
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    // Receipt verification state
+    const [receiptInput, setReceiptInput] = useState('');
+    const [verifying, setVerifying] = useState(false);
+    const [receiptResult, setReceiptResult] = useState(null);
+
+    const verifyReceipt = async (e) => {
+        e.preventDefault();
+        const hash = receiptInput.trim();
+        if (!hash) { toast.error('Please enter a receipt ID.'); return; }
+        setVerifying(true);
+        setReceiptResult(null);
+        try {
+            const { data } = await api.get(`/candidate/vote/receipt/${hash}`);
+            setReceiptResult(data);
+        } catch (err) {
+            if (err.response?.status === 404) {
+                setReceiptResult({ valid: false, message: 'Receipt not found. Check the ID and try again.' });
+            } else {
+                toast.error('Verification failed.');
+            }
+        } finally {
+            setVerifying(false);
+        }
+    };
 
     const handlePasswordChange = async (e) => {
         e.preventDefault();
@@ -209,6 +236,82 @@ export default function Profile() {
                             )}
                         </button>
                     </form>
+                </motion.div>
+
+                {/* Vote Receipt Verification */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                    className="p-6 sm:p-8 rounded-2xl border border-border bg-card backdrop-blur-md mt-8"
+                >
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                            <Search className="w-5 h-5 text-primary-light" />
+                        </div>
+                        <div>
+                            <h3 className="font-semibold text-lg">Verify Vote Receipt</h3>
+                            <p className="text-sm text-text-muted">Paste your receipt ID to confirm your vote was recorded</p>
+                        </div>
+                    </div>
+
+                    <form onSubmit={verifyReceipt} className="space-y-4">
+                        <div>
+                            <input
+                                type="text"
+                                value={receiptInput}
+                                onChange={(e) => { setReceiptInput(e.target.value); setReceiptResult(null); }}
+                                placeholder="Enter your vote receipt ID (SHA-256 hash)"
+                                className="w-full px-4 py-2.5 rounded-xl border border-border bg-surface-light/40 text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all duration-200 text-sm font-mono"
+                            />
+                        </div>
+                        <button
+                            type="submit"
+                            disabled={verifying || !receiptInput.trim()}
+                            className="px-6 py-2.5 rounded-xl text-sm font-semibold bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-2"
+                        >
+                            {verifying ? (
+                                <><Loader2 className="w-4 h-4 animate-spin" /> Verifying…</>
+                            ) : (
+                                <><Search className="w-4 h-4" /> Verify Receipt</>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Verification Result */}
+                    {receiptResult && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className={`mt-5 p-4 rounded-xl border ${receiptResult.valid
+                                    ? 'border-success/30 bg-success/8'
+                                    : 'border-red-500/30 bg-red-500/8'
+                                }`}
+                        >
+                            <div className="flex items-start gap-3">
+                                {receiptResult.valid ? (
+                                    <CheckCircle className="w-5 h-5 text-success shrink-0 mt-0.5" />
+                                ) : (
+                                    <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                                )}
+                                <div>
+                                    <p className={`text-sm font-semibold mb-1 ${receiptResult.valid ? 'text-success' : 'text-red-400'}`}>
+                                        {receiptResult.valid ? 'Vote Verified ✓' : 'Not Found'}
+                                    </p>
+                                    <p className="text-xs text-text-muted">{receiptResult.message}</p>
+                                    {receiptResult.valid && (
+                                        <div className="mt-2 space-y-1 text-xs text-text-muted">
+                                            <p><span className="text-text">Election:</span> {receiptResult.election}</p>
+                                            <p><span className="text-text">Status:</span> {receiptResult.electionStatus}</p>
+                                            {receiptResult.votedAt && (
+                                                <p><span className="text-text">Voted at:</span> {new Date(receiptResult.votedAt).toLocaleString()}</p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
                 </motion.div>
             </div>
         </div>

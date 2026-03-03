@@ -30,6 +30,10 @@ const candidateSchema = new mongoose.Schema({
             votedAt: {
                 type: Date,
                 default: Date.now()
+            },
+            receiptHash: {
+                type: String,
+                default: null
             }
         }
     ],

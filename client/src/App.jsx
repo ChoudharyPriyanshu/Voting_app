@@ -14,6 +14,7 @@ import Results from './pages/Results';
 import ElectionStats from './pages/ElectionStats';
 import ManageCandidates from './pages/admin/ManageCandidates';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AuditLog from './pages/admin/AuditLog';
 
 export default function App() {
     return (
@@ -65,6 +66,14 @@ export default function App() {
                                 <ProtectedRoute>
                                     <ElectionStats />
                                 </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/audit-log"
+                            element={
+                                <AdminRoute>
+                                    <AuditLog />
+                                </AdminRoute>
                             }
                         />
                     </Routes>

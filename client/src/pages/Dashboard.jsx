@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ConfirmVoteModal from '../components/ConfirmVoteModal';
+import VoteReceiptModal from '../components/VoteReceiptModal';
 import { Vote, CheckCircle, Users, ChevronLeft, Calendar, Clock, Timer } from 'lucide-react';
 
 const partyColors = [
@@ -91,6 +92,9 @@ export default function Dashboard() {
     // Confirmation modal state
     const [confirmCandidate, setConfirmCandidate] = useState(null);
 
+    // Vote receipt state
+    const [receiptHash, setReceiptHash] = useState(null);
+
     useEffect(() => { fetchElections(); }, []);
 
     const fetchElections = async () => {
@@ -134,9 +138,14 @@ export default function Dashboard() {
 
         try {
             setVoting(confirmCandidate._id);
-            await api.post(`/candidate/vote/${confirmCandidate._id}`);
+            const { data } = await api.post(`/candidate/vote/${confirmCandidate._id}`);
             toast.success('Your vote has been recorded successfully!');
             await refreshProfile();
+
+            // Show receipt modal with the hash
+            if (data.receiptHash) {
+                setReceiptHash(data.receiptHash);
+            }
         } catch (err) {
             toast.error(err.response?.data?.message || 'Failed to cast vote.');
         } finally {
@@ -303,8 +312,8 @@ export default function Dashboard() {
                                             <button
                                                 disabled={!canVote || voting !== null}
                                                 className={`w-full mt-2 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 cursor-pointer ${!canVote
-                                                        ? 'bg-surface-light/50 text-text-muted cursor-not-allowed'
-                                                        : 'bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 hover:shadow-primary/30'
+                                                    ? 'bg-surface-light/50 text-text-muted cursor-not-allowed'
+                                                    : 'bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/20 hover:shadow-primary/30'
                                                     } disabled:opacity-50 disabled:cursor-not-allowed`}
                                                 onClick={() => promptVote(c)}
                                             >
@@ -337,6 +346,13 @@ export default function Dashboard() {
                 onConfirm={handleVote}
                 onCancel={() => setConfirmCandidate(null)}
                 loading={voting !== null}
+            />
+
+            {/* Vote Receipt Modal */}
+            <VoteReceiptModal
+                isOpen={!!receiptHash}
+                receiptHash={receiptHash}
+                onClose={() => setReceiptHash(null)}
             />
         </div>
     );

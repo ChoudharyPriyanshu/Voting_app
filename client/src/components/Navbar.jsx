@@ -11,6 +11,7 @@ import {
     Menu,
     X,
     Home,
+    History,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -30,6 +31,7 @@ export default function Navbar() {
                 ? [
                     { to: '/admin/dashboard', label: 'Dashboard', icon: BarChart3 },
                     { to: '/admin/candidates', label: 'Manage', icon: Shield },
+                    { to: '/admin/audit-log', label: 'Audit', icon: History },
                 ]
                 : [{ to: '/dashboard', label: 'Dashboard', icon: Home }]),
             { to: '/results', label: 'Results', icon: BarChart3 },
