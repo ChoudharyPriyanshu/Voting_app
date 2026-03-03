@@ -12,6 +12,7 @@ import {
     X,
     Home,
     History,
+    Search,
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -33,7 +34,10 @@ export default function Navbar() {
                     { to: '/admin/candidates', label: 'Manage', icon: Shield },
                     { to: '/admin/audit-log', label: 'Audit', icon: History },
                 ]
-                : [{ to: '/dashboard', label: 'Dashboard', icon: Home }]),
+                : [
+                    { to: '/dashboard', label: 'Dashboard', icon: Home },
+                    { to: '/verify-vote', label: 'Verify Vote', icon: Search },
+                ]),
             { to: '/results', label: 'Results', icon: BarChart3 },
             { to: '/profile', label: 'Profile', icon: User },
         ]

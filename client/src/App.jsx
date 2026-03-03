@@ -12,6 +12,7 @@ import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import Results from './pages/Results';
 import ElectionStats from './pages/ElectionStats';
+import VerifyVote from './pages/VerifyVote';
 import ManageCandidates from './pages/admin/ManageCandidates';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AuditLog from './pages/admin/AuditLog';
@@ -41,6 +42,14 @@ export default function App() {
                             element={
                                 <ProtectedRoute>
                                     <Profile />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/verify-vote"
+                            element={
+                                <ProtectedRoute>
+                                    <VerifyVote />
                                 </ProtectedRoute>
                             }
                         />
