@@ -141,7 +141,8 @@ export default function ElectionStats() {
         );
     }
 
-    const { election, totalRegisteredVoters, totalVotes, participationRate, candidateStats, voteTimeline } = stats;
+    const { election, totalRegisteredVoters, totalVotes, participationRate, candidateStats, voteTimeline, resultsLocked } = stats;
+    const isStatVisible = !resultsLocked;
 
     return (
         <div className="min-h-screen pt-24 pb-12 px-4 sm:px-6">
@@ -176,6 +177,11 @@ export default function ElectionStats() {
                                 {election.endDate && ` — ${new Date(election.endDate).toLocaleDateString()}`}
                             </span>
                         )}
+                        {resultsLocked && (
+                            <span className="flex items-center gap-1 text-primary-light bg-primary/10 px-2.5 py-1 rounded-full text-xs font-semibold">
+                                <Clock className="w-3 h-3" /> Results Locked
+                            </span>
+                        )}
                     </div>
                 </motion.div>
 
@@ -186,68 +192,90 @@ export default function ElectionStats() {
                     <StatCard icon={TrendingUp} label="Participation Rate" value={`${participationRate}%`} sub="voters participated" color="accent" delay={0.16} />
                 </div>
 
-                {/* Candidate Breakdown */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
-                    className="p-6 rounded-2xl border border-border bg-card backdrop-blur-md mb-8"
-                >
-                    <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-accent" /> Candidate Results
-                    </h2>
-                    {candidateStats.length === 0 ? (
-                        <p className="text-text-muted text-sm text-center py-6">No candidates yet.</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {candidateStats.map((c, i) => {
-                                const col = candidateColors[i % candidateColors.length];
-                                const pct = parseFloat(c.votePercent);
-                                return (
-                                    <motion.div
-                                        key={c._id}
-                                        initial={{ opacity: 0, x: -16 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ duration: 0.4, delay: 0.25 + i * 0.07 }}
-                                    >
-                                        <div className="flex items-center justify-between mb-1.5">
-                                            <div className="flex items-center gap-2">
-                                                {i === 0 && totalVotes > 0 && <Trophy className="w-4 h-4 text-accent shrink-0" />}
-                                                <span className="font-semibold text-sm">{c.name}</span>
-                                                <span className="text-xs text-text-muted px-2 py-0.5 rounded-full" style={{ background: col.bg, color: col.text }}>
-                                                    {c.party}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-3 text-sm">
-                                                <span className="font-bold tabular-nums">{c.voteCount}</span>
-                                                <span className="text-text-muted w-12 text-right">{c.votePercent}%</span>
-                                            </div>
-                                        </div>
-                                        <div className="h-2.5 rounded-full bg-surface-light/40 overflow-hidden">
-                                            <motion.div
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${pct}%` }}
-                                                transition={{ duration: 0.9, delay: 0.3 + i * 0.07, ease: 'easeOut' }}
-                                                className="h-full rounded-full"
-                                                style={{ background: col.bar, boxShadow: `0 0 10px ${col.bar}55` }}
-                                            />
-                                        </div>
-                                    </motion.div>
-                                );
-                            })}
+                {!isStatVisible ? (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="p-10 rounded-2xl border border-border bg-card backdrop-blur-md text-center"
+                    >
+                        <Clock className="w-16 h-16 text-primary/30 mx-auto mb-6" />
+                        <h2 className="text-2xl font-bold mb-3">Voting in progress</h2>
+                        <p className="text-text-muted max-w-md mx-auto text-lg leading-relaxed">
+                            To maintain election integrity, candidate-wise results and vote timelines are hidden until the voting period concludes.
+                        </p>
+                        <div className="mt-8 pt-8 border-t border-border/50">
+                            <p className="text-sm text-text-muted italic">
+                                Check back after the deadline to see the final results and full analytics breakdown.
+                            </p>
                         </div>
-                    )}
-                </motion.div>
+                    </motion.div>
+                ) : (
+                    <>
+                        {/* Candidate Breakdown */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
+                            className="p-6 rounded-2xl border border-border bg-card backdrop-blur-md mb-8"
+                        >
+                            <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                                <Trophy className="w-5 h-5 text-accent" /> Candidate Results
+                            </h2>
+                            {candidateStats.length === 0 ? (
+                                <p className="text-text-muted text-sm text-center py-6">No candidates yet.</p>
+                            ) : (
+                                <div className="space-y-4">
+                                    {candidateStats.map((c, i) => {
+                                        const col = candidateColors[i % candidateColors.length];
+                                        const pct = parseFloat(c.votePercent);
+                                        return (
+                                            <motion.div
+                                                key={c._id}
+                                                initial={{ opacity: 0, x: -16 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ duration: 0.4, delay: 0.25 + i * 0.07 }}
+                                            >
+                                                <div className="flex items-center justify-between mb-1.5">
+                                                    <div className="flex items-center gap-2">
+                                                        {i === 0 && totalVotes > 0 && <Trophy className="w-4 h-4 text-accent shrink-0" />}
+                                                        <span className="font-semibold text-sm">{c.name}</span>
+                                                        <span className="text-xs text-text-muted px-2 py-0.5 rounded-full" style={{ background: col.bg, color: col.text }}>
+                                                            {c.party}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-3 text-sm">
+                                                        <span className="font-bold tabular-nums">{c.voteCount}</span>
+                                                        <span className="text-text-muted w-12 text-right">{c.votePercent}%</span>
+                                                    </div>
+                                                </div>
+                                                <div className="h-2.5 rounded-full bg-surface-light/40 overflow-hidden">
+                                                    <motion.div
+                                                        initial={{ width: 0 }}
+                                                        animate={{ width: `${pct}%` }}
+                                                        transition={{ duration: 0.9, delay: 0.3 + i * 0.07, ease: 'easeOut' }}
+                                                        className="h-full rounded-full"
+                                                        style={{ background: col.bar, boxShadow: `0 0 10px ${col.bar}55` }}
+                                                    />
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </motion.div>
 
-                {/* Vote Timeline */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }}
-                    className="p-6 rounded-2xl border border-border bg-card backdrop-blur-md"
-                >
-                    <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
-                        <Clock className="w-5 h-5 text-primary-light" /> Vote Timeline
-                        <span className="text-xs text-text-muted font-normal">(votes per hour)</span>
-                    </h2>
-                    <VoteTimeline data={voteTimeline} />
-                </motion.div>
+                        {/* Vote Timeline */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.35 }}
+                            className="p-6 rounded-2xl border border-border bg-card backdrop-blur-md"
+                        >
+                            <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-primary-light" /> Vote Timeline
+                                <span className="text-xs text-text-muted font-normal">(votes per hour)</span>
+                            </h2>
+                            <VoteTimeline data={voteTimeline} />
+                        </motion.div>
+                    </>
+                )}
             </div>
         </div>
     );

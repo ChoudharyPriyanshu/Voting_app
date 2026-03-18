@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { BarChart3, Trophy, RefreshCw, TrendingUp } from 'lucide-react';
+import { BarChart3, Trophy, RefreshCw, TrendingUp, Clock } from 'lucide-react';
 
 const barColors = [
     { bar: 'linear-gradient(90deg, #6366f1, #818cf8)', glow: 'rgba(99, 102, 241, 0.3)' },
@@ -18,6 +18,7 @@ export default function Results() {
     const [elections, setElections] = useState([]);
     const [selectedElectionId, setSelectedElectionId] = useState('');
     const [results, setResults] = useState([]);
+    const [resultsLocked, setResultsLocked] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadingResults, setLoadingResults] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
@@ -48,9 +49,11 @@ export default function Results() {
         else setLoadingResults(true);
         try {
             const { data } = await api.get(`/candidate/vote/count/${electionId}`);
-            setResults(data);
+            setResults(data.results || []);
+            setResultsLocked(data.resultsLocked || false);
         } catch {
             setResults([]);
+            setResultsLocked(false);
         } finally {
             setLoadingResults(false);
             setRefreshing(false);
@@ -70,8 +73,8 @@ export default function Results() {
         return () => clearInterval(interval);
     }, [selectedElectionId]);
 
-    const maxVotes = Math.max(...results.map((r) => r.count), 1);
-    const totalVotes = results.reduce((sum, r) => sum + r.count, 0);
+    const maxVotes = Math.max(...results.map((r) => r.count || 0), 1);
+    const totalVotes = results.reduce((sum, r) => sum + (r.count || 0), 0);
     const selectedElection = elections.find(e => e._id === selectedElectionId);
 
     return (
@@ -172,6 +175,18 @@ export default function Results() {
                     <div className="flex items-center justify-center py-20">
                         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                     </div>
+                ) : resultsLocked ? (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="text-center py-20 px-6 rounded-3xl border border-dashed border-border bg-card/30 backdrop-blur-sm"
+                    >
+                        <Clock className="w-12 h-12 text-primary/40 mx-auto mb-4" />
+                        <h2 className="text-xl font-semibold mb-2">Voting in progress</h2>
+                        <p className="text-text-muted max-w-sm mx-auto">
+                            Candidate-wise results are hidden to ensure fairness. Full results will be available after the election deadline.
+                        </p>
+                    </motion.div>
                 ) : results.length === 0 ? (
                     <div className="text-center py-20">
                         <BarChart3 className="w-12 h-12 text-text-muted mx-auto mb-4 opacity-50" />

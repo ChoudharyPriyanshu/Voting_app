@@ -17,6 +17,14 @@ const checkAdminRole = async (userID) => {
     }
 };
 
+// Helper: check if results should be locked
+const isResultsLocked = (election) => {
+    if (election.status === 'completed') return false;
+    const now = new Date();
+    if (election.endDate && now > new Date(election.endDate)) return false;
+    return true;
+};
+
 // POST route to add a candidate (must include election field)
 router.post('/', jwtAuthMiddleware, async (req, res) => {
     if (!await checkAdminRole(req.user.id)) {
@@ -200,6 +208,12 @@ router.post('/vote/:candidateID', jwtAuthMiddleware, async (req, res) => {
 // Vote count for a specific election
 router.get('/vote/count/:electionId', async (req, res) => {
     try {
+        const election = await Election.findById(req.params.electionId);
+        if (!election) {
+            return res.status(404).json({ message: 'election not found' });
+        }
+
+        const resultsLocked = isResultsLocked(election);
         const candidates = await Candidate.find({ election: req.params.electionId })
             .sort({ voteCount: 'desc' });
 
@@ -207,11 +221,11 @@ router.get('/vote/count/:electionId', async (req, res) => {
             return {
                 party: data.party,
                 name: data.name,
-                count: data.voteCount
+                count: resultsLocked ? null : data.voteCount
             };
         });
 
-        return res.status(200).json(voteRecord);
+        return res.status(200).json({ results: voteRecord, resultsLocked });
     } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'internal server error' });

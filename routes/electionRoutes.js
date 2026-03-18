@@ -16,6 +16,14 @@ const checkAdminRole = async (userID) => {
     }
 };
 
+// Helper: check if results should be locked
+const isResultsLocked = (election) => {
+    if (election.status === 'completed') return false;
+    const now = new Date();
+    if (election.endDate && now > new Date(election.endDate)) return false;
+    return true;
+};
+
 // POST — Create a new election (admin only)
 router.post('/', jwtAuthMiddleware, async (req, res) => {
     if (!await checkAdminRole(req.user.id)) {
@@ -70,10 +78,11 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ message: 'election not found' });
         }
 
+        const resultsLocked = isResultsLocked(election);
         const candidates = await Candidate.find({ election: req.params.id })
-            .select('name age party voteCount _id');
+            .select(resultsLocked ? 'name age party _id' : 'name age party voteCount _id');
 
-        res.status(200).json({ election, candidates });
+        res.status(200).json({ election, candidates, resultsLocked });
     } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'internal server error' });
@@ -176,31 +185,39 @@ router.get('/:id/stats', async (req, res) => {
             ? ((totalVotes / totalRegisteredVoters) * 100).toFixed(1)
             : '0.0';
 
+        const resultsLocked = isResultsLocked(election);
+
         // Per-candidate breakdown
-        const candidateStats = candidates
-            .sort((a, b) => b.voteCount - a.voteCount)
-            .map(c => ({
-                _id: c._id,
-                name: c.name,
-                party: c.party,
-                voteCount: c.voteCount,
-                votePercent: totalVotes > 0 ? ((c.voteCount / totalVotes) * 100).toFixed(1) : '0.0',
-            }));
+        let candidateStats = [];
+        if (!resultsLocked) {
+            candidateStats = candidates
+                .sort((a, b) => b.voteCount - a.voteCount)
+                .map(c => ({
+                    _id: c._id,
+                    name: c.name,
+                    party: c.party,
+                    voteCount: c.voteCount,
+                    votePercent: totalVotes > 0 ? ((c.voteCount / totalVotes) * 100).toFixed(1) : '0.0',
+                }));
+        }
 
         // Vote timeline — bucket votes by hour using votedAt timestamps
-        const allVotes = candidates.flatMap(c => c.votes.map(v => ({ votedAt: v.votedAt })));
-        allVotes.sort((a, b) => new Date(a.votedAt) - new Date(b.votedAt));
+        let voteTimeline = [];
+        if (!resultsLocked) {
+            const allVotes = candidates.flatMap(c => c.votes.map(v => ({ votedAt: v.votedAt })));
+            allVotes.sort((a, b) => new Date(a.votedAt) - new Date(b.votedAt));
 
-        // Group by hour bucket
-        const timelineMap = {};
-        allVotes.forEach(v => {
-            const d = new Date(v.votedAt);
-            // Round down to hour
-            d.setMinutes(0, 0, 0);
-            const key = d.toISOString();
-            timelineMap[key] = (timelineMap[key] || 0) + 1;
-        });
-        const voteTimeline = Object.entries(timelineMap).map(([time, count]) => ({ time, count }));
+            // Group by hour bucket
+            const timelineMap = {};
+            allVotes.forEach(v => {
+                const d = new Date(v.votedAt);
+                // Round down to hour
+                d.setMinutes(0, 0, 0);
+                const key = d.toISOString();
+                timelineMap[key] = (timelineMap[key] || 0) + 1;
+            });
+            voteTimeline = Object.entries(timelineMap).map(([time, count]) => ({ time, count }));
+        }
 
         res.status(200).json({
             election,
@@ -209,6 +226,7 @@ router.get('/:id/stats', async (req, res) => {
             participationRate: parseFloat(participationRate),
             candidateStats,
             voteTimeline,
+            resultsLocked,
         });
     } catch (err) {
         console.log(err);
