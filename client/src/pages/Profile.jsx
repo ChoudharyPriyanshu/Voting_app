@@ -99,6 +99,10 @@ export default function Profile() {
                                         <>
                                             <CheckCircle className="w-3.5 h-3.5" /> Voted in {user.votedElections.length} election{user.votedElections.length !== 1 ? 's' : ''}
                                         </>
+                                    ) : user?.role === 'admin' ? (
+                                        <>
+                                            <Shield className="w-3.5 h-3.5 text-accent" /> Admin cannot vote
+                                        </>
                                     ) : (
                                         <>
                                             <XCircle className="w-3.5 h-3.5" /> Not voted yet
