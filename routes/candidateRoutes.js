@@ -217,6 +217,8 @@ router.get('/vote/count/:electionId', async (req, res) => {
         const candidates = await Candidate.find({ election: req.params.electionId })
             .sort({ voteCount: 'desc' });
 
+        const totalVotes = candidates.reduce((sum, c) => sum + c.voteCount, 0);
+
         const voteRecord = candidates.map((data) => {
             return {
                 party: data.party,
@@ -225,7 +227,7 @@ router.get('/vote/count/:electionId', async (req, res) => {
             };
         });
 
-        return res.status(200).json({ results: voteRecord, resultsLocked });
+        return res.status(200).json({ results: voteRecord, totalVotes, resultsLocked });
     } catch (err) {
         console.log(err);
         res.status(500).json({ error: 'internal server error' });

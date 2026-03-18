@@ -18,6 +18,7 @@ export default function Results() {
     const [elections, setElections] = useState([]);
     const [selectedElectionId, setSelectedElectionId] = useState('');
     const [results, setResults] = useState([]);
+    const [totalVotes, setTotalVotes] = useState(0);
     const [resultsLocked, setResultsLocked] = useState(false);
     const [loading, setLoading] = useState(true);
     const [loadingResults, setLoadingResults] = useState(false);
@@ -50,9 +51,11 @@ export default function Results() {
         try {
             const { data } = await api.get(`/candidate/vote/count/${electionId}`);
             setResults(data.results || []);
+            setTotalVotes(data.totalVotes || 0);
             setResultsLocked(data.resultsLocked || false);
         } catch {
             setResults([]);
+            setTotalVotes(0);
             setResultsLocked(false);
         } finally {
             setLoadingResults(false);
@@ -74,7 +77,6 @@ export default function Results() {
     }, [selectedElectionId]);
 
     const maxVotes = Math.max(...results.map((r) => r.count || 0), 1);
-    const totalVotes = results.reduce((sum, r) => sum + (r.count || 0), 0);
     const selectedElection = elections.find(e => e._id === selectedElectionId);
 
     return (
