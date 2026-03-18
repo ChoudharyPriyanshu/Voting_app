@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 const emptyElectionForm = { title: '', description: '', startDate: '', endDate: '' };
-const emptyCandidateForm = { name: '', age: '', party: '' };
+const emptyCandidateForm = { name: '', party: '', position: '', description: '', manifesto: '', symbol: null, photo: null };
 
 export default function ManageCandidates() {
     const [elections, setElections] = useState([]);
@@ -21,6 +21,8 @@ export default function ManageCandidates() {
     const [showCandidateModal, setShowCandidateModal] = useState(false);
     const [editingCandidate, setEditingCandidate] = useState(null);
     const [candidateForm, setCandidateForm] = useState(emptyCandidateForm);
+    const [symbolPreview, setSymbolPreview] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
 
     const [loading, setLoading] = useState(true);
     const [loadingCandidates, setLoadingCandidates] = useState(false);
@@ -127,20 +129,63 @@ export default function ManageCandidates() {
         }
     };
 
-    const openAddCandidate = () => { setEditingCandidate(null); setCandidateForm(emptyCandidateForm); setShowCandidateModal(true); };
+    const openAddCandidate = () => { 
+        setEditingCandidate(null); 
+        setCandidateForm(emptyCandidateForm); 
+        setSymbolPreview(null);
+        setPhotoPreview(null);
+        setShowCandidateModal(true); 
+    };
 
-    const openEditCandidate = (c) => { setEditingCandidate(c); setCandidateForm({ name: c.name, age: c.age || '', party: c.party }); setShowCandidateModal(true); };
+    const openEditCandidate = (c) => { 
+        setEditingCandidate(c); 
+        setCandidateForm({ 
+            name: c.name, 
+            party: c.party, 
+            position: c.position || '', 
+            description: c.description || '', 
+            manifesto: c.manifesto || '',
+            symbol: null,
+            photo: null
+        }); 
+        setSymbolPreview(c.symbol);
+        setPhotoPreview(c.photo);
+        setShowCandidateModal(true); 
+    };
 
     const handleCandidateSubmit = async (e) => {
         e.preventDefault();
-        if (!candidateForm.name || !candidateForm.age || !candidateForm.party) { toast.error('All candidate fields are required.'); return; }
+        if (!candidateForm.name || !candidateForm.party || !candidateForm.manifesto) { 
+            toast.error('Name, Party, and Manifesto are required.'); 
+            return; 
+        }
+        if (!editingCandidate && !candidateForm.symbol) {
+            toast.error('Party symbol is required.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('name', candidateForm.name);
+        formData.append('party', candidateForm.party);
+        formData.append('position', candidateForm.position);
+        formData.append('description', candidateForm.description);
+        formData.append('manifesto', candidateForm.manifesto);
+        formData.append('election', selectedElection._id);
+
+        if (candidateForm.symbol) formData.append('symbol', candidateForm.symbol);
+        if (candidateForm.photo) formData.append('photo', candidateForm.photo);
+
         setSubmitting(true);
         try {
             if (editingCandidate) {
-                await api.put(`/candidate/${editingCandidate._id}`, { ...candidateForm, age: Number(candidateForm.age) });
+                await api.put(`/candidate/${editingCandidate._id}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
                 toast.success('Candidate updated!');
             } else {
-                await api.post('/candidate', { ...candidateForm, age: Number(candidateForm.age), election: selectedElection._id });
+                await api.post('/candidate', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
                 toast.success('Candidate added!');
             }
             setShowCandidateModal(false);
@@ -259,8 +304,20 @@ export default function ManageCandidates() {
                                                 className="flex items-center justify-between p-4 rounded-2xl border border-border bg-card hover:border-primary/30 transition-all duration-200"
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center text-sm font-bold text-primary-light">{c.name?.charAt(0)?.toUpperCase()}</div>
-                                                    <div><p className="font-semibold text-sm">{c.name}</p><p className="text-xs text-text-muted">{c.party} • Age {c.age}</p></div>
+                                                    <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center overflow-hidden border border-border">
+                                                        {c.photo ? (
+                                                            <img src={`${api.defaults.baseURL.replace('/api', '')}${c.photo}`} alt={c.name} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-lg font-bold text-primary-light">{c.name?.charAt(0)?.toUpperCase()}</span>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-semibold text-sm">{c.name}</p>
+                                                            {c.symbol && <img src={`${api.defaults.baseURL.replace('/api', '')}${c.symbol}`} alt="symbol" className="w-4 h-4 object-contain opacity-70" />}
+                                                        </div>
+                                                        <p className="text-xs text-text-muted">{c.party} {c.position ? `• ${c.position}` : ''}</p>
+                                                    </div>
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     <button onClick={() => openEditCandidate(c)} className="p-2 rounded-xl text-text-muted hover:text-primary-light hover:bg-primary/10 transition-all cursor-pointer" aria-label={`Edit ${c.name}`}><Pencil className="w-3.5 h-3.5" /></button>
@@ -329,11 +386,81 @@ export default function ManageCandidates() {
                                     <h2 className="text-xl font-bold" style={{ fontFamily: 'var(--font-display)' }}>{editingCandidate ? 'Edit Candidate' : 'Add Candidate'}</h2>
                                     <button onClick={() => setShowCandidateModal(false)} className="p-2 rounded-lg hover:bg-surface-light/60 text-text-muted hover:text-text transition-colors cursor-pointer"><X className="w-5 h-5" /></button>
                                 </div>
-                                <form onSubmit={handleCandidateSubmit} className="space-y-4">
-                                    <div><label htmlFor="cName" className="block text-sm font-medium text-text-muted mb-1.5">Name <span className="text-danger">*</span></label><input id="cName" type="text" value={candidateForm.name} onChange={(e) => setCandidateForm(p => ({ ...p, name: e.target.value }))} placeholder="Candidate name" className={inputClass} /></div>
-                                    <div><label htmlFor="cAge" className="block text-sm font-medium text-text-muted mb-1.5">Age <span className="text-danger">*</span></label><input id="cAge" type="number" value={candidateForm.age} onChange={(e) => setCandidateForm(p => ({ ...p, age: e.target.value }))} placeholder="Age" className={inputClass} /></div>
-                                    <div><label htmlFor="cParty" className="block text-sm font-medium text-text-muted mb-1.5">Party <span className="text-danger">*</span></label><input id="cParty" type="text" value={candidateForm.party} onChange={(e) => setCandidateForm(p => ({ ...p, party: e.target.value }))} placeholder="Party name" className={inputClass} /></div>
-                                    <div className="flex items-center gap-3 pt-2">
+                                <form onSubmit={handleCandidateSubmit} className="space-y-4 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label htmlFor="cName" className="block text-sm font-medium text-text-muted mb-1.5">Name <span className="text-danger">*</span></label>
+                                                <input id="cName" type="text" value={candidateForm.name} onChange={(e) => setCandidateForm(p => ({ ...p, name: e.target.value }))} placeholder="Candidate name" className={inputClass} />
+                                            </div>
+                                            <div>
+                                                <label htmlFor="cParty" className="block text-sm font-medium text-text-muted mb-1.5">Party <span className="text-danger">*</span></label>
+                                                <input id="cParty" type="text" value={candidateForm.party} onChange={(e) => setCandidateForm(p => ({ ...p, party: e.target.value }))} placeholder="Party name" className={inputClass} />
+                                            </div>
+                                            <div>
+                                                <label htmlFor="cPosition" className="block text-sm font-medium text-text-muted mb-1.5">Position</label>
+                                                <input id="cPosition" type="text" value={candidateForm.position} onChange={(e) => setCandidateForm(p => ({ ...p, position: e.target.value }))} placeholder="e.g. President" className={inputClass} />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-text-muted mb-1.5">Symbol <span className="text-danger">*</span></label>
+                                                <div className="relative group">
+                                                    <div className="w-full aspect-square rounded-xl border-2 border-dashed border-border group-hover:border-primary/50 transition-colors flex items-center justify-center overflow-hidden bg-surface-light/20">
+                                                        {symbolPreview ? (
+                                                            <img src={symbolPreview.startsWith('http') || symbolPreview.startsWith('/') ? (symbolPreview.startsWith('/') ? `${api.defaults.baseURL.replace('/api', '')}${symbolPreview}` : symbolPreview) : symbolPreview} alt="Symbol Preview" className="w-full h-full object-contain p-2" />
+                                                        ) : (
+                                                            <Plus className="w-6 h-6 text-text-muted group-hover:text-primary transition-colors" />
+                                                        )}
+                                                        <input type="file" accept="image/*" onChange={(e) => {
+                                                            const file = e.target.files[0];
+                                                            if (file) {
+                                                                setCandidateForm(p => ({ ...p, symbol: file }));
+                                                                setSymbolPreview(URL.createObjectURL(file));
+                                                            }
+                                                        }} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-text-muted mb-1.5">Photo</label>
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-surface-light/20 relative shrink-0">
+                                                {photoPreview ? (
+                                                    <img src={photoPreview.startsWith('http') || photoPreview.startsWith('/') ? (photoPreview.startsWith('/') ? `${api.defaults.baseURL.replace('/api', '')}${photoPreview}` : photoPreview) : photoPreview} alt="Photo Preview" className="w-full h-full object-cover" />
+                                                ) : (
+                                                    <Plus className="w-5 h-5 text-text-muted" />
+                                                )}
+                                                <input type="file" accept="image/*" onChange={(e) => {
+                                                    const file = e.target.files[0];
+                                                    if (file) {
+                                                        setCandidateForm(p => ({ ...p, photo: file }));
+                                                        setPhotoPreview(URL.createObjectURL(file));
+                                                    }
+                                                }} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                            </div>
+                                            <div className="text-[11px] text-text-muted">
+                                                <p className="font-medium">Candidate Profile Picture</p>
+                                                <p>Recommended: Square aspect ratio, max 2MB</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="cDesc" className="block text-sm font-medium text-text-muted mb-1.5">Brief Description</label>
+                                        <textarea id="cDesc" rows={2} value={candidateForm.description} onChange={(e) => setCandidateForm(p => ({ ...p, description: e.target.value }))} placeholder="One sentence summary..." className={`${inputClass} resize-none`} />
+                                    </div>
+
+                                    <div>
+                                        <label htmlFor="cManifesto" className="block text-sm font-medium text-text-muted mb-1.5">Manifesto <span className="text-danger">*</span></label>
+                                        <textarea id="cManifesto" rows={4} value={candidateForm.manifesto} onChange={(e) => setCandidateForm(p => ({ ...p, manifesto: e.target.value }))} placeholder="Detailed goals and promises..." className={`${inputClass} resize-none`} />
+                                    </div>
+
+                                    <div className="flex items-center gap-3 pt-4 sticky bottom-0 bg-surface py-2 border-t border-border mt-6">
                                         <button type="submit" disabled={submitting} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/25 transition-all duration-300 disabled:opacity-50 cursor-pointer">
                                             {submitting ? <span className="flex items-center justify-center gap-2"><span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Saving…</span> : editingCandidate ? 'Update' : 'Add'}
                                         </button>

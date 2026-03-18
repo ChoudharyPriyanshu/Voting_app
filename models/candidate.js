@@ -7,11 +7,24 @@ const candidateSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    age: {
-        type: Number,
+    party: {
+        type: String,
         required: true
     },
-    party: {
+    symbol: {
+        type: String, // Path or URL to the symbol image
+        required: true
+    },
+    photo: {
+        type: String // Path or URL to the candidate photo
+    },
+    position: {
+        type: String
+    },
+    description: {
+        type: String
+    },
+    manifesto: {
         type: String,
         required: true
     },
@@ -37,7 +50,6 @@ const candidateSchema = new mongoose.Schema({
             }
         }
     ],
-
     voteCount: {
         type: Number,
         default: 0

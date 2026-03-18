@@ -1,12 +1,14 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 require('dotenv').config();
 const db = require('./db');
-
 const bodyParser = require('body-parser');
+
 app.use(bodyParser.json());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Rate limiter for login: max 5 attempts per 15 minutes
 const loginLimiter = rateLimit({

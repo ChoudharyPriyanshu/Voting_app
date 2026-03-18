@@ -6,6 +6,20 @@ const Candidate = require('../models/candidate');
 const Election = require('../models/election');
 const AuditLog = require('../models/auditLog');
 const { jwtAuthMiddleware, generateToken } = require('../jwt');
+const multer = require('multer');
+const path = require('path');
+
+// Multer configuration for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/candidates');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const upload = multer({ storage: storage });
 
 // function to check whether admin or not 
 const checkAdminRole = async (userID) => {
@@ -26,7 +40,7 @@ const isResultsLocked = (election) => {
 };
 
 // POST route to add a candidate (must include election field)
-router.post('/', jwtAuthMiddleware, async (req, res) => {
+router.post('/', jwtAuthMiddleware, upload.fields([{ name: 'symbol', maxCount: 1 }, { name: 'photo', maxCount: 1 }]), async (req, res) => {
     if (!await checkAdminRole(req.user.id)) {
         return res.status(403).json({ message: 'user has not admin role' });
     }
@@ -41,6 +55,12 @@ router.post('/', jwtAuthMiddleware, async (req, res) => {
         const election = await Election.findById(data.election);
         if (!election) {
             return res.status(404).json({ message: 'election not found' });
+        }
+
+        // Add file paths to data
+        if (req.files) {
+            if (req.files.symbol) data.symbol = `/uploads/candidates/${req.files.symbol[0].filename}`;
+            if (req.files.photo) data.photo = `/uploads/candidates/${req.files.photo[0].filename}`;
         }
 
         const newCandidate = new Candidate(data);
@@ -67,7 +87,7 @@ router.post('/', jwtAuthMiddleware, async (req, res) => {
 });
 
 // Update candidate (admin only)
-router.put('/:candidateId', jwtAuthMiddleware, async (req, res) => {
+router.put('/:candidateId', jwtAuthMiddleware, upload.fields([{ name: 'symbol', maxCount: 1 }, { name: 'photo', maxCount: 1 }]), async (req, res) => {
     if (!await checkAdminRole(req.user.id)) {
         return res.status(403).json({ message: 'user has not admin role' });
     }
@@ -75,6 +95,12 @@ router.put('/:candidateId', jwtAuthMiddleware, async (req, res) => {
     try {
         const candidateId = req.params.candidateId;
         const updatedCandidateData = req.body;
+
+        // Add file paths to updated data
+        if (req.files) {
+            if (req.files.symbol) updatedCandidateData.symbol = `/uploads/candidates/${req.files.symbol[0].filename}`;
+            if (req.files.photo) updatedCandidateData.photo = `/uploads/candidates/${req.files.photo[0].filename}`;
+        }
 
         const response = await Candidate.findByIdAndUpdate(candidateId, updatedCandidateData, {
             new: true,
@@ -244,7 +270,11 @@ router.get('/list/:electionId', async (req, res) => {
                 _id: data._id,
                 party: data.party,
                 name: data.name,
-                age: data.age
+                symbol: data.symbol,
+                photo: data.photo,
+                position: data.position,
+                description: data.description,
+                manifesto: data.manifesto
             };
         });
         return res.status(200).json(LIST);
