@@ -297,17 +297,46 @@ export default function Dashboard() {
                                             style={{ borderColor: color.border }}
                                         >
                                             <div className="absolute top-0 left-0 right-0 h-1 rounded-t-2xl" style={{ background: color.text }} />
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div>
-                                                    <h3 className="text-lg font-semibold mb-1">{c.name}</h3>
-                                                    <span className="inline-block px-3 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: color.bg, color: color.text }}>
-                                                        {c.party}
-                                                    </span>
+                                            <div className="flex items-start gap-4 mb-4">
+                                                <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-border overflow-hidden shrink-0">
+                                                    {c.photo ? (
+                                                        <img src={c.photo} alt={c.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary-light bg-primary/15">
+                                                            {c.name?.charAt(0)?.toUpperCase()}
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: color.bg }}>
-                                                    <Vote className="w-5 h-5" style={{ color: color.text }} />
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h3 className="text-lg font-bold truncate">{c.name}</h3>
+                                                        {c.symbol && (
+                                                            <img 
+                                                                src={c.symbol} 
+                                                                alt="Symbol" 
+                                                                className="w-5 h-5 object-contain" 
+                                                                title={`${c.party} Symbol`}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: color.bg, color: color.text }}>
+                                                            {c.party}
+                                                        </span>
+                                                        {c.position && (
+                                                            <span className="text-[10px] font-medium text-text-muted bg-surface-light px-2 py-0.5 rounded-full border border-border">
+                                                                {c.position}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
+
+                                            {c.description && (
+                                                <p className="text-xs text-text-muted mb-4 line-clamp-2 italic">
+                                                    "{c.description}"
+                                                </p>
+                                            )}
 
                                             <button
                                                 disabled={!canVote || voting !== null}

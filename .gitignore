@@ -1,3 +1,5 @@
 node_modules/
 .env
-README.md
+dist/
+*.log
+.DS_Store

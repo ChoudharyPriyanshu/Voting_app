@@ -306,7 +306,7 @@ export default function ManageCandidates() {
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center overflow-hidden border border-border">
                                                         {c.photo ? (
-                                                            <img src={`${api.defaults.baseURL.replace('/api', '')}${c.photo}`} alt={c.name} className="w-full h-full object-cover" />
+                                                            <img src={c.photo} alt={c.name} className="w-full h-full object-cover" />
                                                         ) : (
                                                             <span className="text-lg font-bold text-primary-light">{c.name?.charAt(0)?.toUpperCase()}</span>
                                                         )}
@@ -314,7 +314,7 @@ export default function ManageCandidates() {
                                                     <div>
                                                         <div className="flex items-center gap-2">
                                                             <p className="font-semibold text-sm">{c.name}</p>
-                                                            {c.symbol && <img src={`${api.defaults.baseURL.replace('/api', '')}${c.symbol}`} alt="symbol" className="w-4 h-4 object-contain opacity-70" />}
+                                                            {c.symbol && <img src={c.symbol} alt="symbol" className="w-4 h-4 object-contain opacity-70" />}
                                                         </div>
                                                         <p className="text-xs text-text-muted">{c.party} {c.position ? `• ${c.position}` : ''}</p>
                                                     </div>
@@ -409,7 +409,7 @@ export default function ManageCandidates() {
                                                 <div className="relative group">
                                                     <div className="w-full aspect-square rounded-xl border-2 border-dashed border-border group-hover:border-primary/50 transition-colors flex items-center justify-center overflow-hidden bg-surface-light/20">
                                                         {symbolPreview ? (
-                                                            <img src={symbolPreview.startsWith('http') || symbolPreview.startsWith('/') ? (symbolPreview.startsWith('/') ? `${api.defaults.baseURL.replace('/api', '')}${symbolPreview}` : symbolPreview) : symbolPreview} alt="Symbol Preview" className="w-full h-full object-contain p-2" />
+                                                            <img src={symbolPreview} alt="Symbol Preview" className="w-full h-full object-contain p-2" />
                                                         ) : (
                                                             <Plus className="w-6 h-6 text-text-muted group-hover:text-primary transition-colors" />
                                                         )}
@@ -431,7 +431,7 @@ export default function ManageCandidates() {
                                         <div className="flex items-center gap-4">
                                             <div className="w-16 h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-surface-light/20 relative shrink-0">
                                                 {photoPreview ? (
-                                                    <img src={photoPreview.startsWith('http') || photoPreview.startsWith('/') ? (photoPreview.startsWith('/') ? `${api.defaults.baseURL.replace('/api', '')}${photoPreview}` : photoPreview) : photoPreview} alt="Photo Preview" className="w-full h-full object-cover" />
+                                                    <img src={photoPreview} alt="Photo Preview" className="w-full h-full object-cover" />
                                                 ) : (
                                                     <Plus className="w-5 h-5 text-text-muted" />
                                                 )}

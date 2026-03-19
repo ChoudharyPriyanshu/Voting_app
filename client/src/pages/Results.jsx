@@ -212,9 +212,16 @@ export default function Results() {
                                     <div className="flex items-center justify-between mb-3">
                                         <div className="flex items-center gap-3">
                                             {isLeading && <Trophy className="w-5 h-5 text-accent" />}
-                                            <div>
+                                            <div className="flex items-center gap-2">
                                                 <span className="font-semibold text-base">{r.name}</span>
-                                                <span className="text-text-muted text-sm ml-2">({r.party})</span>
+                                                {r.symbol && (
+                                                    <img 
+                                                        src={r.symbol} 
+                                                        alt="symbol" 
+                                                        className="w-4 h-4 object-contain opacity-80" 
+                                                    />
+                                                )}
+                                                <span className="text-text-muted text-sm ml-1">({r.party})</span>
                                             </div>
                                         </div>
                                         <span className="text-sm font-bold tabular-nums">

@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, X, Shield } from 'lucide-react';
+import api from '../api/axios';
 
 export default function ConfirmVoteModal({ isOpen, candidate, onConfirm, onCancel, loading }) {
     return (
@@ -22,26 +23,27 @@ export default function ConfirmVoteModal({ isOpen, candidate, onConfirm, onCance
                         style={{ backgroundColor: 'var(--color-surface)' }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4">
-                            <div className="w-14 h-14 rounded-2xl bg-accent/15 flex items-center justify-center">
-                                <AlertTriangle className="w-7 h-7 text-accent" />
+                        {/* Candidate Identity */}
+                        <div className="flex items-center gap-4 p-4 rounded-2xl bg-surface-light/40 border border-border mb-6">
+                            <div className="w-16 h-16 rounded-xl overflow-hidden bg-primary/10 border border-border shrink-0">
+                                {candidate?.photo ? (
+                                    <img src={candidate.photo} alt={candidate.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-xl font-bold text-primary-light">
+                                        {candidate?.name?.charAt(0)?.toUpperCase()}
+                                    </div>
+                                )}
                             </div>
-                        </div>
-
-                        {/* Content */}
-                        <h3
-                            className="text-xl font-bold text-center mb-2"
-                            style={{ fontFamily: 'var(--font-display)' }}
-                        >
-                            Confirm Your Vote
-                        </h3>
-                        <p className="text-center text-text-muted text-sm mb-1">
-                            You are about to vote for:
-                        </p>
-                        <div className="text-center mb-4">
-                            <p className="text-lg font-semibold text-primary-light">{candidate?.name}</p>
-                            <p className="text-sm text-text-muted">{candidate?.party}</p>
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                    <h3 className="font-bold text-lg truncate">{candidate?.name}</h3>
+                                    {candidate?.symbol && (
+                                        <img src={candidate.symbol} alt="symbol" className="w-5 h-5 object-contain" />
+                                    )}
+                                </div>
+                                <p className="text-sm text-primary-light font-medium">{candidate?.party}</p>
+                                {candidate?.position && <p className="text-[10px] text-text-muted uppercase tracking-wider">{candidate.position}</p>}
+                            </div>
                         </div>
 
                         {/* Warning */}

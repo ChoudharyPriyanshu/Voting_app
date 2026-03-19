@@ -60,10 +60,10 @@ export default function Navbar() {
                     <Link
                         to="/"
                         className="flex items-center gap-2 text-primary-light font-bold text-lg hover:text-primary transition-colors duration-200"
-                        aria-label="Home"
+                        aria-label="VotoSphere Home"
                     >
-                        <Vote className="w-6 h-6" />
-                        <span className="font-display">VoteApp</span>
+                        <img src="/logo.png" alt="VotoSphere" className="w-8 h-8 rounded-lg object-contain" />
+                        <span className="font-display tracking-tight">VotoSphere</span>
                     </Link>
 
                     {/* Desktop Nav */}

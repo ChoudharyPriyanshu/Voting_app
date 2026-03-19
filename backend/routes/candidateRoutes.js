@@ -249,6 +249,7 @@ router.get('/vote/count/:electionId', async (req, res) => {
             return {
                 party: data.party,
                 name: data.name,
+                symbol: data.symbol,
                 count: resultsLocked ? null : data.voteCount
             };
         });

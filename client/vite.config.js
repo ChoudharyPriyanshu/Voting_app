@@ -11,6 +11,7 @@ export default defineConfig({
             '/candidate': 'http://localhost:3000',
             '/election': 'http://localhost:3000',
             '/audit': 'http://localhost:3000',
+            '/uploads': 'http://localhost:3000',
         },
     },
 });

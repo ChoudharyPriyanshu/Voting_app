@@ -68,7 +68,7 @@ export default function Landing() {
                         custom={0}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-primary/30 bg-primary/10 text-primary-light text-sm font-medium mb-8"
                     >
-                        <Vote className="w-4 h-4" />
+                        <img src="/logo.png" alt="logo" className="w-4 h-4 object-contain" />
                         Secure Digital Voting Platform
                     </motion.div>
 
@@ -152,7 +152,7 @@ export default function Landing() {
                             className="text-3xl sm:text-4xl font-bold mb-4"
                             style={{ fontFamily: 'var(--font-display)' }}
                         >
-                            Why Choose VoteApp?
+                            Why Choose VotoSphere?
                         </h2>
                         <p className="text-text-muted text-lg max-w-xl mx-auto">
                             Built for security, transparency, and ease of use.
@@ -211,7 +211,7 @@ export default function Landing() {
 
             {/* Footer */}
             <footer className="border-t border-border py-8 px-4 text-center text-sm text-text-muted">
-                <p>© {new Date().getFullYear()} VoteApp by Priyanshu Choudhary. All rights reserved.</p>
+                <p>© {new Date().getFullYear()} VotoSphere. All rights reserved.</p>
             </footer>
         </div>
     );
