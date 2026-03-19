@@ -8,6 +8,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  voterId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  adminId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
   age: {
     type: Number,
     required: true,

@@ -9,9 +9,13 @@ router.post('/signup', async (req, res) => {
     try {
         const data = req.body;
 
-        // Validate age
-        if (data.age < 18) {
+        // Validate age (must be explicitly provided and >= 18)
+        if (!data.age || Number(data.age) < 18) {
             return res.status(400).json({ message: 'You must be at least 18 years old to register' });
+        }
+
+        if (data.role === 'admin') {
+            console.log('Admin signup attempt - Age:', data.age);
         }
 
         // Admin check removed to allow multiple admin signups
@@ -28,6 +32,13 @@ router.post('/signup', async (req, res) => {
             isVerified: false,
         });
         if (existingUnverified) {
+            // Assign IDs if missing
+            if (data.role === 'admin' && !existingUnverified.adminId) {
+                existingUnverified.adminId = `ADMIN-${Math.floor(100000 + Math.random() * 900000)}`;
+            } else if (data.role !== 'admin' && !existingUnverified.voterId) {
+                existingUnverified.voterId = `VOTER-${Math.floor(100000 + Math.random() * 900000)}`;
+            }
+
             // Resend OTP to existing unverified account
             const otp = generateOTP();
             existingUnverified.otp = otp;
@@ -49,6 +60,15 @@ router.post('/signup', async (req, res) => {
 
         // Generate OTP
         const otp = generateOTP();
+
+        // Generate Unique ID based on role
+        if (data.role === 'admin') {
+            data.adminId = `ADMIN-${Math.floor(100000 + Math.random() * 900000)}`;
+            console.log('Generated Admin ID:', data.adminId);
+        } else {
+            data.voterId = `VOTER-${Math.floor(100000 + Math.random() * 900000)}`;
+            console.log('Generated Voter ID:', data.voterId);
+        }
 
         const newUser = new User({
             ...data,
@@ -113,7 +133,7 @@ router.post('/verify-otp', async (req, res) => {
         // Generate token
         const token = generateToken({ id: user.id });
 
-        console.log('User verified:', user.email);
+        console.log('User verified:', user.email, 'ID:', user.role === 'admin' ? user.adminId : user.voterId);
         res.status(200).json({ token, user, message: 'Email verified successfully!' });
     } catch (err) {
         console.log(err);

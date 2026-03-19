@@ -142,7 +142,6 @@ export default function Signup() {
                             <option value="voter">Voter</option>
                             <option value="admin">Admin</option>
                         </select>
-                        <p className="text-xs text-text-muted/70 mt-1">Only one admin account is allowed.</p>
                     </div>
 
                     {/* Password */}

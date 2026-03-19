@@ -51,6 +51,11 @@ export default function Profile() {
 
     const profileFields = [
         { icon: User, label: 'Full Name', value: user?.name },
+        { 
+            icon: Shield, 
+            label: user?.role === 'admin' ? 'Admin ID' : 'Voter ID', 
+            value: user?.role === 'admin' ? user?.adminId : user?.voterId 
+        },
         { icon: Calendar, label: 'Age', value: user?.age },
         { icon: Mail, label: 'Email', value: user?.email || '—' },
         { icon: Phone, label: 'Mobile', value: user?.mobile || '—' },
