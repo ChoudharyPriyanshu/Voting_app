@@ -9,13 +9,8 @@ router.post('/signup', async (req, res) => {
     try {
         const data = req.body;
 
-        // Check admin limit
-        if (data.role === 'admin') {
-            const existingAdmin = await User.findOne({ role: 'admin' });
-            if (existingAdmin) {
-                return res.status(403).json({ message: 'An admin already exists' });
-            }
-        }
+        // Admin check removed to allow multiple admin signups
+
 
         // Require email for OTP
         if (!data.email) {
