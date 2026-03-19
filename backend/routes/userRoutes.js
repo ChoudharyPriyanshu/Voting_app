@@ -9,6 +9,11 @@ router.post('/signup', async (req, res) => {
     try {
         const data = req.body;
 
+        // Validate age
+        if (data.age < 18) {
+            return res.status(400).json({ message: 'You must be at least 18 years old to register' });
+        }
+
         // Admin check removed to allow multiple admin signups
 
 

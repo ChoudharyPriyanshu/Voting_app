@@ -57,6 +57,11 @@ router.post('/', jwtAuthMiddleware, upload.fields([{ name: 'symbol', maxCount: 1
             return res.status(404).json({ message: 'election not found' });
         }
 
+        // Ownership restriction: Only owner can add candidates
+        if (election.adminId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'you do not own this election' });
+        }
+
         // Add file paths to data
         if (req.files) {
             if (req.files.symbol) data.symbol = `/uploads/candidates/${req.files.symbol[0].filename}`;
@@ -95,6 +100,16 @@ router.put('/:candidateId', jwtAuthMiddleware, upload.fields([{ name: 'symbol', 
     try {
         const candidateId = req.params.candidateId;
         const updatedCandidateData = req.body;
+
+        const candidate = await Candidate.findById(candidateId).populate('election');
+        if (!candidate) {
+            return res.status(404).json({ error: 'candidate not found' });
+        }
+
+        // Ownership restriction: Only owner of the election can update its candidates
+        if (candidate.election.adminId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'you do not own the election this candidate belongs to' });
+        }
 
         // Add file paths to updated data
         if (req.files) {
@@ -139,6 +154,16 @@ router.delete('/:candidateID', jwtAuthMiddleware, async (req, res) => {
 
     try {
         const candidateID = req.params.candidateID;
+        const candidate = await Candidate.findById(candidateID).populate('election');
+        if (!candidate) {
+            return res.status(404).json({ error: 'candidate not found' });
+        }
+
+        // Ownership restriction: Only owner of the election can delete its candidates
+        if (candidate.election.adminId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'you do not own the election this candidate belongs to' });
+        }
+
         const response = await Candidate.findByIdAndDelete(candidateID);
         if (!response) {
             return res.status(404).json({ error: 'candidate not found' });

@@ -1,6 +1,16 @@
 const mongoose = require('mongoose');
 
 const electionSchema = new mongoose.Schema({
+    electionId: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    adminId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user',
+        required: true
+    },
     title: {
         type: String,
         required: true
@@ -26,6 +36,7 @@ const electionSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
+
 });
 
 const Election = mongoose.model('election', electionSchema);

@@ -31,12 +31,37 @@ router.post('/', jwtAuthMiddleware, async (req, res) => {
     }
 
     try {
-        const { title, description } = req.body;
-        if (!title) {
-            return res.status(400).json({ message: 'title is required' });
+        const { title, description, electionId, startDate, endDate } = req.body;
+        if (!title || !electionId) {
+            return res.status(400).json({ message: 'title and electionId are required' });
         }
 
-        const newElection = new Election({ title, description });
+        // Date validation
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (startDate && new Date(startDate) < today) {
+            return res.status(400).json({ message: 'Start date must be today or in the future' });
+        }
+
+        if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+            return res.status(400).json({ message: 'End date must be after the start date' });
+        }
+
+        // Check for duplicate electionId
+        const existing = await Election.findOne({ electionId });
+        if (existing) {
+            return res.status(400).json({ message: 'electionId must be unique' });
+        }
+
+        const newElection = new Election({ 
+            title, 
+            description, 
+            electionId, 
+            adminId: req.user.id,
+            startDate,
+            endDate
+        });
         const saved = await newElection.save();
         console.log('Election created:', saved.title);
 
@@ -59,10 +84,18 @@ router.post('/', jwtAuthMiddleware, async (req, res) => {
     }
 });
 
-// GET — List all elections
-router.get('/', async (req, res) => {
+// GET — List all elections (filtered by ownership for admins)
+router.get('/', jwtAuthMiddleware, async (req, res) => {
     try {
-        const elections = await Election.find().sort({ createdAt: -1 });
+        let filter = {};
+        const user = await User.findById(req.user?.id);
+        
+        // If user is an admin, only show THEIR elections in the dashboard
+        if (user && user.role === 'admin') {
+            filter.adminId = user._id;
+        }
+
+        const elections = await Election.find(filter).sort({ createdAt: -1 });
         res.status(200).json(elections);
     } catch (err) {
         console.log(err);
@@ -71,11 +104,17 @@ router.get('/', async (req, res) => {
 });
 
 // GET — Get single election with its candidates
-router.get('/:id', async (req, res) => {
+router.get('/:id', jwtAuthMiddleware, async (req, res) => {
     try {
         const election = await Election.findById(req.params.id);
         if (!election) {
             return res.status(404).json({ message: 'election not found' });
+        }
+
+        // Ownership check for admins (optional for viewing, but recommended for data separation)
+        const user = await User.findById(req.user?.id);
+        if (user && user.role === 'admin' && election.adminId.toString() !== user._id.toString()) {
+            return res.status(403).json({ message: 'you do not own this election' });
         }
 
         const resultsLocked = isResultsLocked(election);
@@ -96,6 +135,28 @@ router.put('/:id', jwtAuthMiddleware, async (req, res) => {
     }
 
     try {
+        const { startDate, endDate } = req.body;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (startDate && new Date(startDate) < today) {
+            return res.status(400).json({ message: 'Start date must be today or in the future' });
+        }
+
+        if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+            return res.status(400).json({ message: 'End date must be after the start date' });
+        }
+
+        const election = await Election.findById(req.params.id);
+        if (!election) {
+            return res.status(404).json({ message: 'election not found' });
+        }
+
+        // Restriction: Only owner can update
+        if (election.adminId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'you do not own this election' });
+        }
+
         const updated = await Election.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -136,6 +197,16 @@ router.delete('/:id', jwtAuthMiddleware, async (req, res) => {
     }
 
     try {
+        const electionToVerify = await Election.findById(req.params.id);
+        if (!electionToVerify) {
+            return res.status(404).json({ message: 'election not found' });
+        }
+
+        // Restriction: Only owner can delete
+        if (electionToVerify.adminId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'you do not own this election' });
+        }
+
         const election = await Election.findByIdAndDelete(req.params.id);
         if (!election) {
             return res.status(404).json({ message: 'election not found' });
@@ -236,13 +307,18 @@ router.get('/:id/stats', async (req, res) => {
 
 // GET — Voter turnout for an election (admin only)
 router.get('/:id/turnout', jwtAuthMiddleware, async (req, res) => {
-    if (!await checkAdminRole(req.user.id)) {
-        return res.status(403).json({ message: 'admin only' });
-    }
-
     try {
         const election = await Election.findById(req.params.id);
         if (!election) return res.status(404).json({ message: 'election not found' });
+
+        // Restriction: Only owner can view turnout
+        if (election.adminId.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ message: 'you do not own this election' });
+        }
+
+        if (!await checkAdminRole(req.user.id)) {
+            return res.status(403).json({ message: 'admin only' });
+        }
 
         // All registered voters
         const voters = await User.find({ role: 'voter', isVerified: true })
