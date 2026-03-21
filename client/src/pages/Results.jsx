@@ -147,8 +147,9 @@ export default function Results() {
                             {elections.length === 0 && <option value="">No elections available</option>}
                             {elections.map((el) => (
                                 <option key={el._id} value={el._id}>
-                                    {el.title} ({el.status})
+                                    {el.title} [{el.electionId}] ({el.status})
                                 </option>
+
                             ))}
                         </select>
                     </div>

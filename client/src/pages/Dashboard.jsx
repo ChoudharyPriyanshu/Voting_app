@@ -238,12 +238,20 @@ export default function Dashboard() {
                                             className="relative text-left p-6 rounded-2xl border border-border bg-card backdrop-blur-md hover:border-primary/40 transition-all duration-300 cursor-pointer"
                                         >
                                             <div className="flex items-start justify-between mb-3">
-                                                <h3 className="text-lg font-semibold pr-4">{el.title}</h3>
+                                                <div>
+                                                    <h3 className="text-lg font-semibold pr-4">{el.title}</h3>
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <span className="text-[10px] font-mono font-bold text-primary-light/80 bg-primary/5 px-2 py-0.5 rounded-md border border-primary/10 tracking-widest">
+                                                            {el.electionId}
+                                                        </span>
+                                                    </div>
+                                                </div>
                                                 <span className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-medium ${votable ? 'bg-success/15 text-success' : 'bg-text-muted/15 text-text-muted'
                                                     }`}>
                                                     {votable ? 'active' : el.status === 'completed' ? 'completed' : 'scheduled'}
                                                 </span>
                                             </div>
+
                                             {el.description && (
                                                 <p className="text-sm text-text-muted mb-3 line-clamp-2">{el.description}</p>
                                             )}

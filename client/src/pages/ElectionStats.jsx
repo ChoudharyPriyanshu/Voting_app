@@ -166,10 +166,15 @@ export default function ElectionStats() {
                     <h1 className="text-3xl sm:text-4xl font-bold mb-2" style={{ fontFamily: 'var(--font-display)' }}>
                         {election.title}
                     </h1>
-                    <div className="flex items-center gap-3 flex-wrap text-sm text-text-muted">
+                    <div className="flex items-center gap-3 flex-wrap text-sm text-text-muted mb-4">
+                        <span className="text-xs font-mono font-bold text-primary-light bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 tracking-widest">
+                            {election.electionId}
+                        </span>
                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${election.status === 'active' ? 'bg-success/15 text-success' : 'bg-text-muted/15'}`}>
                             {election.status}
                         </span>
+
+
                         {election.startDate && (
                             <span className="flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5" />

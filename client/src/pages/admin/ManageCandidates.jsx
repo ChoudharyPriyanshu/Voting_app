@@ -254,9 +254,17 @@ export default function ManageCandidates() {
                                         className={`p-4 rounded-2xl border cursor-pointer transition-all duration-200 ${selectedElection?._id === el._id ? 'border-primary/50 bg-primary/10' : 'border-border bg-card hover:border-primary/30'}`}
                                     >
                                         <div className="flex items-start justify-between mb-1">
-                                            <h3 className="font-semibold text-sm pr-2">{el.title}</h3>
+                                            <div className="pr-2">
+                                                <h3 className="font-semibold text-sm">{el.title}</h3>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <span className="text-[9px] font-mono font-bold text-primary-light/80 bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10 tracking-wider">
+                                                        {el.electionId}
+                                                    </span>
+                                                </div>
+                                            </div>
                                             <span className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider ${el.status === 'active' ? 'bg-success/15 text-success' : 'bg-text-muted/15 text-text-muted'}`}>{el.status}</span>
                                         </div>
+
                                         {el.description && <p className="text-xs text-text-muted line-clamp-1">{el.description}</p>}
                                         {(el.startDate || el.endDate) && (
                                             <p className="text-[10px] text-text-muted/60 mt-1">

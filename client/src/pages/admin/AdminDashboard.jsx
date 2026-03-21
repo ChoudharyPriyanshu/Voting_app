@@ -119,10 +119,16 @@ function ElectionTurnoutCard({ election, index }) {
                 <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
                         <h3 className="font-semibold text-base mb-0.5">{election.title}</h3>
-                        <span className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-full ${election.status === 'active' ? 'bg-success/15 text-success' : 'bg-text-muted/15 text-text-muted'}`}>
-                            {election.status}
-                        </span>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[9px] font-mono font-bold text-primary-light/80 bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10 tracking-wider">
+                                {election.electionId}
+                            </span>
+                            <span className={`text-[10px] font-medium uppercase px-2 py-0.5 rounded-full ${election.status === 'active' ? 'bg-success/15 text-success' : 'bg-text-muted/15 text-text-muted'}`}>
+                                {election.status}
+                            </span>
+                        </div>
                     </div>
+
                     {/* Export Buttons */}
                     <div className="flex items-center gap-2 shrink-0">
                         <button

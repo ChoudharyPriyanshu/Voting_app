@@ -31,9 +31,18 @@ router.post('/', jwtAuthMiddleware, async (req, res) => {
     }
 
     try {
-        const { title, description, electionId, startDate, endDate } = req.body;
-        if (!title || !electionId) {
-            return res.status(400).json({ message: 'title and electionId are required' });
+        const { title, description, startDate, endDate } = req.body;
+        if (!title) {
+            return res.status(400).json({ message: 'title is required' });
+        }
+
+        // Auto-generate unique electionId
+        let electionId;
+        let isUnique = false;
+        while (!isUnique) {
+            electionId = `ELEC-${Math.floor(100000 + Math.random() * 900000)}`;
+            const existing = await Election.findOne({ electionId });
+            if (!existing) isUnique = true;
         }
 
         // Date validation
@@ -48,12 +57,6 @@ router.post('/', jwtAuthMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'End date must be after the start date' });
         }
 
-        // Check for duplicate electionId
-        const existing = await Election.findOne({ electionId });
-        if (existing) {
-            return res.status(400).json({ message: 'electionId must be unique' });
-        }
-
         const newElection = new Election({ 
             title, 
             description, 
@@ -62,6 +65,7 @@ router.post('/', jwtAuthMiddleware, async (req, res) => {
             startDate,
             endDate
         });
+
         const saved = await newElection.save();
         console.log('Election created:', saved.title);
 
