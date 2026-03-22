@@ -32,6 +32,10 @@ const electionSchema = new mongoose.Schema({
         enum: ['active', 'completed'],
         default: 'active'
     },
+    eligibleVoters: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'user'
+    }],
     createdAt: {
         type: Date,
         default: Date.now

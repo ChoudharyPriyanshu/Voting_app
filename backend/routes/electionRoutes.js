@@ -24,6 +24,22 @@ const isResultsLocked = (election) => {
     return true;
 };
 
+// GET — List all verified voters (admin only)
+router.get('/voters/list', jwtAuthMiddleware, async (req, res) => {
+    if (!await checkAdminRole(req.user.id)) {
+        return res.status(403).json({ message: 'admin only' });
+    }
+    try {
+        const voters = await User.find({ role: 'voter', isVerified: true })
+            .select('name voterId email')
+            .sort({ name: 1 });
+        res.status(200).json(voters);
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: 'internal server error' });
+    }
+});
+
 // POST — Create a new election (admin only)
 router.post('/', jwtAuthMiddleware, async (req, res) => {
     if (!await checkAdminRole(req.user.id)) {
@@ -63,7 +79,8 @@ router.post('/', jwtAuthMiddleware, async (req, res) => {
             electionId, 
             adminId: req.user.id,
             startDate,
-            endDate
+            endDate,
+            eligibleVoters: req.body.eligibleVoters || []
         });
 
         const saved = await newElection.save();
@@ -97,6 +114,9 @@ router.get('/', jwtAuthMiddleware, async (req, res) => {
         // If user is an admin, only show THEIR elections in the dashboard
         if (user && user.role === 'admin') {
             filter.adminId = user._id;
+        } else if (user && user.role === 'voter') {
+            // If user is a voter, only show elections they are eligible for
+            filter.eligibleVoters = user._id;
         }
 
         const elections = await Election.find(filter).sort({ createdAt: -1 });
@@ -110,7 +130,7 @@ router.get('/', jwtAuthMiddleware, async (req, res) => {
 // GET — Get single election with its candidates
 router.get('/:id', jwtAuthMiddleware, async (req, res) => {
     try {
-        const election = await Election.findById(req.params.id);
+        const election = await Election.findById(req.params.id).populate('eligibleVoters', 'name voterId email');
         if (!election) {
             return res.status(404).json({ message: 'election not found' });
         }
@@ -170,6 +190,10 @@ router.put('/:id', jwtAuthMiddleware, async (req, res) => {
         if (!updated) {
             return res.status(404).json({ message: 'election not found' });
         }
+        
+        // Populate if needed for response
+        const populated = await Election.findById(updated._id).populate('eligibleVoters', 'name voterId');
+
         console.log('Election updated:', updated.title);
 
         // Audit log
@@ -356,5 +380,6 @@ router.get('/:id/turnout', jwtAuthMiddleware, async (req, res) => {
         res.status(500).json({ error: 'internal server error' });
     }
 });
+
 
 module.exports = router;

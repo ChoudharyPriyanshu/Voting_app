@@ -175,4 +175,71 @@ router.get('/:id/export/pdf', jwtAuthMiddleware, async (req, res) => {
     }
 });
 
+// GET — Export eligible voter list as CSV/PDF (admin only)
+router.get('/:id/export/voter-list/:format', jwtAuthMiddleware, async (req, res) => {
+    if (!await checkAdminRole(req.user.id)) {
+        return res.status(403).json({ message: 'admin only' });
+    }
+
+    try {
+        const { id, format } = req.params;
+        const election = await Election.findById(id).populate('eligibleVoters', 'name voterId email');
+        if (!election) return res.status(404).json({ message: 'election not found' });
+
+        const voters = election.eligibleVoters || [];
+
+        if (format === 'csv') {
+            const rows = [
+                ['Eligible Voter List — ' + election.title],
+                ['Total Eligible', voters.length],
+                ['Date Exported', new Date().toLocaleString()],
+                [],
+                ['Name', 'Voter ID', 'Email'],
+                ...voters.map(v => [v.name, v.voterId, v.email || 'N/A'])
+            ];
+            const csvContent = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename="voters-${election.electionId}.csv"`);
+            return res.send(csvContent);
+        } else if (format === 'pdf') {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="voters-${election.electionId}.pdf"`);
+            
+            const doc = new PDFDocument({ margin: 50, size: 'A4' });
+            doc.pipe(res);
+
+            doc.fontSize(20).fillColor('#6366f1').text('Eligible Voter List', { align: 'center' });
+            doc.fontSize(14).fillColor('#111827').text(election.title, { align: 'center' });
+            doc.fontSize(10).fillColor('#6b7280').text(`Total Eligible: ${voters.length}`, { align: 'center' });
+            doc.moveDown(1);
+
+            // Table Header
+            const colX = [50, 200, 350];
+            doc.rect(50, doc.y, 495, 20).fill('#f3f4f6');
+            doc.fillColor('#374151').fontSize(10);
+            doc.text('Name', colX[0], doc.y - 15);
+            doc.text('Voter ID', colX[1], doc.y - 15);
+            doc.text('Email', colX[2], doc.y - 15);
+            doc.moveDown(0.5);
+
+            voters.forEach((v, i) => {
+                const rowY = doc.y;
+                if (i % 2 !== 0) doc.rect(50, rowY - 2, 495, 18).fill('#f9fafb');
+                doc.fillColor('#111827').text(v.name, colX[0], rowY);
+                doc.text(v.voterId || 'N/A', colX[1], rowY);
+                doc.text(v.email || 'N/A', colX[2], rowY);
+                doc.moveDown(0.6);
+            });
+
+            doc.end();
+            return;
+        } else {
+            res.status(400).json({ message: 'invalid format' });
+        }
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ error: 'internal server error' });
+    }
+});
+
 module.exports = router;

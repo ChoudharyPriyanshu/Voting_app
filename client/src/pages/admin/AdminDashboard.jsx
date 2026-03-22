@@ -63,6 +63,7 @@ function ElectionTurnoutCard({ election, index }) {
     const [loading, setLoading] = useState(false);
     const [expanded, setExpanded] = useState(false);
     const [exporting, setExporting] = useState(null);
+    const [exportingVoters, setExportingVoters] = useState(null);
 
     const loadTurnout = useCallback(async () => {
         if (turnout) return; // already loaded
@@ -104,6 +105,30 @@ function ElectionTurnoutCard({ election, index }) {
             toast.error(`Failed to export as ${format.toUpperCase()}.`);
         } finally {
             setExporting(null);
+        }
+    };
+
+    const handleExportVoters = async (format) => {
+        setExportingVoters(format);
+        try {
+            const response = await api.get(`/election/${election._id}/export/voter-list/${format}`, {
+                responseType: 'blob',
+            });
+            const mimeType = format === 'csv' ? 'text/csv' : 'application/pdf';
+            const blob = new Blob([response.data], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `eligible-voters-${election.electionId}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast.success(`Voter List (${format.toUpperCase()}) downloaded!`);
+        } catch {
+            toast.error(`Failed to download voter list as ${format.toUpperCase()}.`);
+        } finally {
+            setExportingVoters(null);
         }
     };
 
@@ -153,6 +178,14 @@ function ElectionTurnoutCard({ election, index }) {
                             title="Download PDF"
                         >
                             {exporting === 'pdf' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />} PDF
+                        </button>
+                        <button
+                            onClick={() => handleExportVoters('pdf')}
+                            disabled={exportingVoters === 'pdf'}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-border hover:border-primary/40 hover:bg-primary/5 text-text-muted hover:text-primary-light transition-all cursor-pointer disabled:opacity-50"
+                            title="Download Eligible Voter List (PDF)"
+                        >
+                            {exportingVoters === 'pdf' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Users className="w-3.5 h-3.5" />} Voters
                         </button>
                     </div>
                 </div>

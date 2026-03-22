@@ -7,7 +7,7 @@ import {
     Users, Shield, Vote, Calendar,
 } from 'lucide-react';
 
-const emptyElectionForm = { title: '', description: '', startDate: '', endDate: '' };
+const emptyElectionForm = { title: '', description: '', startDate: '', endDate: '', eligibleVoters: [] };
 const emptyCandidateForm = { name: '', party: '', position: '', description: '', manifesto: '', symbol: null, photo: null };
 
 export default function ManageCandidates() {
@@ -28,16 +28,22 @@ export default function ManageCandidates() {
     const [loadingCandidates, setLoadingCandidates] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [deleting, setDeleting] = useState(null);
+    const [allVoters, setAllVoters] = useState([]);
+    const [voterSearch, setVoterSearch] = useState('');
 
     useEffect(() => { fetchElections(); }, []);
 
     // ─── Election CRUD ───
     const fetchElections = async () => {
         try {
-            const { data } = await api.get('/election');
-            setElections(data);
+            const [elRes, voterRes] = await Promise.all([
+                api.get('/election'),
+                api.get('/election/voters/list')
+            ]);
+            setElections(elRes.data);
+            setAllVoters(voterRes.data);
         } catch {
-            toast.error('Failed to load elections.');
+            toast.error('Failed to load elections or voters.');
         } finally {
             setLoading(false);
         }
@@ -56,6 +62,7 @@ export default function ManageCandidates() {
             description: el.description || '',
             startDate: el.startDate ? new Date(el.startDate).toISOString().slice(0, 16) : '',
             endDate: el.endDate ? new Date(el.endDate).toISOString().slice(0, 16) : '',
+            eligibleVoters: el.eligibleVoters ? el.eligibleVoters.map(v => typeof v === 'string' ? v : v._id) : []
         });
         setShowElectionModal(true);
     };
@@ -69,6 +76,7 @@ export default function ManageCandidates() {
             description: electionForm.description,
             startDate: electionForm.startDate ? new Date(electionForm.startDate).toISOString() : null,
             endDate: electionForm.endDate ? new Date(electionForm.endDate).toISOString() : null,
+            eligibleVoters: electionForm.eligibleVoters,
         };
 
         setSubmitting(true);
@@ -371,6 +379,65 @@ export default function ManageCandidates() {
                                             <input id="elEnd" type="datetime-local" value={electionForm.endDate} onChange={(e) => setElectionForm(p => ({ ...p, endDate: e.target.value }))} className={`${inputClass} [color-scheme:dark]`} />
                                         </div>
                                     </div>
+
+                                    {/* Voter Selection */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-text-muted mb-1.5">Eligible Voters ({electionForm.eligibleVoters.length} selected)</label>
+                                        <div className="space-y-2">
+                                            <input 
+                                                type="text" 
+                                                placeholder="Search voters..." 
+                                                value={voterSearch}
+                                                onChange={(e) => setVoterSearch(e.target.value)}
+                                                className={inputClass}
+                                            />
+                                            <div className="max-h-40 overflow-y-auto border border-border rounded-xl p-2 bg-surface-light/20 space-y-1 custom-scrollbar">
+                                                {allVoters
+                                                    .filter(v => v.name.toLowerCase().includes(voterSearch.toLowerCase()) || v.voterId?.toLowerCase().includes(voterSearch.toLowerCase()))
+                                                    .map(v => (
+                                                        <label key={v._id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-light/40 cursor-pointer transition-colors">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={electionForm.eligibleVoters.includes(v._id)}
+                                                                onChange={(e) => {
+                                                                    const checked = e.target.checked;
+                                                                    setElectionForm(prev => ({
+                                                                        ...prev,
+                                                                        eligibleVoters: checked 
+                                                                            ? [...prev.eligibleVoters, v._id]
+                                                                            : prev.eligibleVoters.filter(id => id !== v._id)
+                                                                    }));
+                                                                }}
+                                                                className="w-4 h-4 rounded border-border text-primary focus:ring-primary/50"
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-sm font-medium truncate">{v.name}</p>
+                                                                <p className="text-[10px] text-text-muted line-mono">{v.voterId}</p>
+                                                            </div>
+                                                        </label>
+                                                    ))
+                                                }
+                                                {allVoters.length === 0 && <p className="text-center text-xs text-text-muted py-4">No verified voters found.</p>}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setElectionForm(p => ({ ...p, eligibleVoters: allVoters.map(v => v._id) }))}
+                                                    className="text-[10px] font-medium text-primary hover:text-primary-dark transition-colors cursor-pointer"
+                                                >
+                                                    Select All
+                                                </button>
+                                                <button 
+                                                    type="button" 
+                                                    onClick={() => setElectionForm(p => ({ ...p, eligibleVoters: [] }))}
+                                                    className="text-[10px] font-medium text-text-muted hover:text-danger transition-colors cursor-pointer"
+                                                >
+                                                    Clear Selection
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <p className="text-[10px] text-text-muted/60">Leave dates empty for elections with no time limit.</p>
                                     <div className="flex items-center gap-3 pt-2">
                                         <button type="submit" disabled={submitting} className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary hover:bg-primary-dark text-white shadow-lg shadow-primary/25 transition-all duration-300 disabled:opacity-50 cursor-pointer">

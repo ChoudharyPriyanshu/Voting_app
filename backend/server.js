@@ -34,8 +34,8 @@ app.use('/user/login', loginLimiter);
 //use the router 
 app.use('/user', userRoutes);
 app.use('/candidate', candidateRoutes);
+app.use('/election', exportRoutes); // exportRoutes before electionRoutes
 app.use('/election', electionRoutes);
-app.use('/election', exportRoutes);
 app.use('/audit', auditRoutes);
 
 
