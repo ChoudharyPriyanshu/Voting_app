@@ -23,7 +23,7 @@ router.get('/', jwtAuthMiddleware, async (req, res) => {
     try {
         const { limit = 50, page = 1, action, targetType } = req.query;
 
-        const filter = {};
+        const filter = { adminId: req.user.id };
         if (action) filter.action = action;
         if (targetType) filter.targetType = targetType;
 
