@@ -1,59 +1,100 @@
-# 🗳️ VotoSphere — Voting Application
+# 🗳️ VotoSphere — Secure Digital Voting Platform
 
-A full-stack voting system featuring a **React + Vite** frontend and a **Node.js + Express** backend. The application manages user registration (with OTP verification), secure voting, and admin-led election management.
+VotoSphere is a state-of-the-art, full-stack voting system designed for security, transparency, and ease of use. It leverages a **MERN stack** (MongoDB, Express, React, Node) to provide a robust platform for both voters and administrators.
 
 ---
 
-## 📁 Project Structure
+## 🌟 Key Features
 
-```
+### 🔐 Security & Authentication
+- **Identity Verification**: Multi-step registration requiring a unique Aadhar ID.
+- **Email OTP**: 6-digit one-time password verification for all new accounts.
+- **JWT-Based Auth**: Secure, stateless session management with JSON Web Tokens.
+- **Role-Based Access (RBAC)**: Distinct dashboards and permissions for Voters and Admins.
+
+### 🗳️ Voting Experience
+- **Targeted Eligibility**: Admins can specify exactly which voters are eligible for each election.
+- **One-Vote-Per-Election**: Strict enforcement to ensure fairness.
+- **Vote Receipts**: Secure, downloadable PDF receipts for every vote cast.
+- **Live Results**: Real-time vote counting with results locked until election completion.
+
+### 🛡️ Administrative Control
+- **Election Management**: Full CRUD operations for elections and candidates.
+- **Audit Logs**: Comprehensive tracking of all administrative actions for accountability.
+- **Voter Turnout Analysis**: Detailed statistics on participation and voting timelines.
+
+---
+
+## 🚀 Tech Stack
+
+### Frontend
+- **React 19** + **Vite**
+- **Tailwind CSS v4** (Modern Utility-First Styling)
+- **Framer Motion** (Smooth UI Animations)
+- **Lucide React** (Clean SVG Icons)
+- **React Router DOM v7**
+
+### Backend
+- **Node.js** & **Express.js**
+- **MongoDB** & **Mongoose**
+- **PDFKit** (Secure Receipt Generation)
+- **Nodemailer** (Email Services)
+- **Bcrypt** (Password Hashing)
+
+---
+
+## 📂 Project Structure
+
+```bash
 Voting_app/
-├── backend/                 # Node.js + Express Server
-│   ├── server.js            # Entry point (port 3000)
-│   ├── db.js                # MongoDB connection
-│   ├── jwt.js               # Auth middleware
-│   ├── models/              # Mongoose schemas
-│   ├── routes/              # API endpoints
-│   ├── uploads/             # Static assets (symbols, photos)
-│   └── .env                 # Environment variables
-├── client/                  # React + Vite Frontend
-│   ├── src/                 # Source code
-│   └── vite.config.js       # Vite configuration (proxy to port 3000)
-└── README.md                # Project documentation
+├── backend/                 # Node.js + Express API
+│   ├── server.js            # Entry point
+│   ├── models/              # Mongoose Schemas (User, Election, Candidate, AuditLog)
+│   ├── routes/              # RESTful API Endpoints
+│   └── uploads/             # Static Assets (Candidate Symbols)
+├── client/                  # React + Vite UI
+│   ├── src/                 # Application Source
+│   │   ├── components/      # Reusable UI Elements (Navbar, Modals, etc.)
+│   │   ├── pages/           # View Components (Dashboard, Results, Profile)
+│   │   └── context/         # Auth & Global State
+└── PROJECT_DOCUMENTATION.md # Detailed technical specifications
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🛠️ Getting Started
 
-### 1. Backend Setup
+### 1. Prerequisites
+- Node.js (v18+)
+- MongoDB (Local or Atlas)
+
+### 2. Backend Setup
 ```bash
 cd backend
 npm install
-# Create .env with MONGODB_URL, JWT_SECRET, EMAIL_USER, EMAIL_PASS
+# Create a .env file with:
+# MONGODB_URL=...
+# JWT_SECRET=...
+# EMAIL_USER=...
+# EMAIL_PASS=...
 npm start
 ```
 
-### 2. Frontend Setup
+### 3. Frontend Setup
 ```bash
 cd client
 npm install
 npm run dev
 ```
 
-The application will be available at `http://localhost:5173`.
-
----
-
-## 🛠️ Features
-- **OTP Verification**: Secure registration via email OTP.
-- **Role-Based Access**: Separate dashboards for voters and admins.
-- **Election Management**: Admins can create and manage candidates/elections.
-- **Secure Voting**: One-vote-per-election policy with cryptographic vote receipts.
-- **Audit Logs**: Tracking administrative actions for transparency.
+The application will be live at `http://localhost:5173`.
 
 ---
 
 ## 📝 Author
 **Priyanshu Choudhary**
 
+---
+
+> [!NOTE]
+> For a more detailed technical breakdown, system design, and future roadmap, please refer to the [PROJECT_DOCUMENTATION.md](./PROJECT_DOCUMENTATION.md) file.
