@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import ConfirmLogoutModal from './ConfirmLogoutModal';
@@ -78,14 +78,20 @@ export default function Navbar() {
                         {/* Desktop Nav */}
                         <div className="hidden md:flex items-center gap-1">
                             {navLinks.map(({ to, label, icon: Icon }) => (
-                                <Link
+                                <NavLink
                                     key={to}
                                     to={to}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-text-muted hover:text-text hover:bg-surface-light/50 transition-all duration-200"
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                                            isActive
+                                                ? 'text-primary-light bg-primary/10'
+                                                : 'text-text-muted hover:text-text hover:bg-surface-light/50'
+                                        }`
+                                    }
                                 >
                                     <Icon className="w-4 h-4" />
                                     {label}
-                                </Link>
+                                </NavLink>
                             ))}
                             {isAuthenticated ? (
                                 <button
@@ -135,15 +141,21 @@ export default function Navbar() {
                                     </div>
                                 )}
                                 {navLinks.map(({ to, label, icon: Icon }) => (
-                                    <Link
+                                    <NavLink
                                         key={to}
                                         to={to}
                                         onClick={() => setMobileOpen(false)}
-                                        className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-text-muted hover:text-text hover:bg-surface-light/50 transition-all duration-200"
+                                        className={({ isActive }) =>
+                                            `flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                                                isActive
+                                                    ? 'text-primary-light bg-primary/10'
+                                                    : 'text-text-muted hover:text-text hover:bg-surface-light/50'
+                                            }`
+                                        }
                                     >
                                         <Icon className="w-4 h-4" />
                                         {label}
-                                    </Link>
+                                    </NavLink>
                                 ))}
                                 {isAuthenticated ? (
                                     <button
