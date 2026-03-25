@@ -1,3 +1,8 @@
+/**
+ * Election Routes
+ * Handles election lifecycle: creation, listing, updates, and statistical analysis.
+ * Base Path: /api/v1/election
+ */
 const express = require('express');
 const router = express.Router();
 const Election = require('../models/election');

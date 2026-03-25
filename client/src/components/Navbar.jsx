@@ -50,7 +50,6 @@ export default function Navbar() {
             { to: '/profile', label: 'Profile', icon: User },
         ]
         : [
-            { to: '/results', label: 'Results', icon: BarChart3 },
             { to: '/login', label: 'Login', icon: User },
         ];
 

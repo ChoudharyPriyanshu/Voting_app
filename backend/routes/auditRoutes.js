@@ -1,3 +1,8 @@
+/**
+ * Audit Routes
+ * Provides access to system audit logs for administrative monitoring.
+ * Base Path: /api/v1/audit
+ */
 const express = require('express');
 const router = express.Router();
 const AuditLog = require('../models/auditLog');

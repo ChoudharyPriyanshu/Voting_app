@@ -14,16 +14,6 @@ const fadeUp = {
 
 const features = [
     {
-        icon: Shield,
-        title: 'Secure Authentication',
-        desc: 'Aadhar-verified identity ensures one person, one vote.',
-    },
-    {
-        icon: BarChart3,
-        title: 'Live Results',
-        desc: 'Watch vote counts update in real-time as votes are cast.',
-    },
-    {
         icon: Users,
         title: 'Transparent Process',
         desc: 'Every vote is recorded and traceable for complete transparency.',
@@ -99,7 +89,7 @@ export default function Landing() {
                         className="text-lg sm:text-xl text-text-muted max-w-2xl mx-auto mb-10 leading-relaxed"
                     >
                         A secure and transparent online voting platform. Register with your Aadhar
-                        card, cast your vote, and track live results — all in one place.
+                        card and cast your vote — all in one place.
                     </motion.p>
 
                     <motion.div

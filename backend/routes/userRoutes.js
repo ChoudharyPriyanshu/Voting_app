@@ -1,3 +1,8 @@
+/**
+ * User Routes
+ * Handles user registration, authentication, profile management, and OTP verification.
+ * Base Path: /api/v1/user
+ */
 const express = require('express');
 const router = express.Router();
 const User = require('./../models/user');

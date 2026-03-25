@@ -1,16 +1,27 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const bodyParser = require('body-parser');
+require('dotenv').config();
+
+const db = require('./db');
+const jwtAuthMiddleware = require('./jwt');
+
+// Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
-require('dotenv').config();
-const db = require('./db');
-const bodyParser = require('body-parser');
 
+/**
+ * Middleware Configuration
+ */
 app.use(bodyParser.json());
+// Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Rate limiter for login: max 5 attempts per 15 minutes
+/**
+ * Security: Rate Limiting
+ * Limits login attempts to prevent brute-force attacks
+ */
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5,
@@ -20,26 +31,32 @@ const loginLimiter = rateLimit({
   keyGenerator: (req) => req.ip,
 });
 
-const jwtAuthMiddleware = require('./jwt');
-//import the router files
+/**
+ * Route Imports
+ */
 const userRoutes = require('./routes/userRoutes');
 const candidateRoutes = require('./routes/candidateRoutes');
 const electionRoutes = require('./routes/electionRoutes');
 const exportRoutes = require('./routes/exportRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 
-// Apply rate limiter to login route
-app.use('/user/login', loginLimiter);
+/**
+ * API Routes (v1)
+ */
+// Apply rate limiter specifically to login
+app.use('/api/v1/user/login', loginLimiter);
 
-//use the router 
-app.use('/user', userRoutes);
-app.use('/candidate', candidateRoutes);
-app.use('/election', exportRoutes); // exportRoutes before electionRoutes
-app.use('/election', electionRoutes);
-app.use('/audit', auditRoutes);
+// Mount routes with versioning prefix
+app.use('/api/v1/user', userRoutes);
+app.use('/api/v1/candidate', candidateRoutes);
+app.use('/api/v1/election', exportRoutes); // exportRoutes before electionRoutes for overlapping paths
+app.use('/api/v1/election', electionRoutes);
+app.use('/api/v1/audit', auditRoutes);
 
-
+/**
+ * Server Activation
+ */
 app.listen(PORT, () => {
-  console.log('server is listening at 3000 port');
-
+  console.log(`Server is running on port ${PORT}`);
+  console.log(`API Base URL: http://localhost:${PORT}/api/v1`);
 });

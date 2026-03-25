@@ -24,9 +24,15 @@ export default function Results() {
     const [loadingResults, setLoadingResults] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
 
+    const { isAuthenticated } = useAuth();
+
     useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/login');
+            return;
+        }
         fetchElections();
-    }, []);
+    }, [isAuthenticated, navigate]);
 
     const fetchElections = async () => {
         try {

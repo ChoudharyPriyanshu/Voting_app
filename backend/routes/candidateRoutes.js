@@ -1,3 +1,8 @@
+/**
+ * Candidate Routes
+ * Handles candidate management (add, update, delete) and voting operations.
+ * Base Path: /api/v1/candidate
+ */
 const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();

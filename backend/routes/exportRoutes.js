@@ -1,3 +1,8 @@
+/**
+ * Export Routes
+ * Handles data exportation (CSV/PDF) for election results and voter lists.
+ * Base Path: /api/v1/election
+ */
 const express = require('express');
 const router = express.Router();
 const PDFDocument = require('pdfkit');
@@ -92,7 +97,7 @@ router.get('/:id/export/pdf', jwtAuthMiddleware, async (req, res) => {
         doc.pipe(res);
 
         // ── Header ──
-        doc.fontSize(22).fillColor('#6366f1').text('VoteApp', { align: 'center' });
+        doc.fontSize(22).fillColor('#6366f1').text('VotoSphere', { align: 'center' });
         doc.fontSize(16).fillColor('#1e1b4b').text('Election Results Report', { align: 'center' });
         doc.moveDown(0.5);
         doc.fontSize(18).fillColor('#111827').text(election.title, { align: 'center' });

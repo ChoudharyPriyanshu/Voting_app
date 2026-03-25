@@ -67,7 +67,6 @@ VotoSphere follows a **Client-Server Architecture** with a clear separation of c
 
 ## Current Features
 - [x] Secure OTP-based Signup & Verification
-- [x] Aadhar-based Login System
 - [x] Role-Based Dashboards (Admin vs. Voter)
 - [x] Comprehensive Election Management (CRUD)
 - [x] Targeted Voter Eligibility
