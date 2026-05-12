@@ -5,35 +5,76 @@
  */
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const User = require('./../models/user');
+const AdminProfile = require('./../models/adminProfile');
+const AuditLog = require('./../models/auditLog');
 const { jwtAuthMiddleware, generateToken } = require('./../jwt');
 const { generateOTP, sendOTPEmail } = require('./../mailer');
+const { validateSignup, calculateAge } = require('./../middleware/validate');
+const { handleSignupUploads } = require('./../uploadConfig');
+
+const HASH_SECRET = process.env.AADHAAR_HASH_SECRET || 'default-hash-secret';
+
+/**
+ * Hash Aadhaar number using HMAC-SHA256
+ */
+function hashAadhaar(aadhaarNumber) {
+  return crypto
+    .createHmac('sha256', HASH_SECRET)
+    .update(aadhaarNumber.toString().replace(/\s/g, ''))
+    .digest('hex');
+}
+
+/**
+ * Mask Aadhaar to show only last 4 digits
+ */
+function maskAadhaar(aadhaarNumber) {
+  const clean = aadhaarNumber.toString().replace(/\s/g, '');
+  return `XXXX-XXXX-${clean.slice(-4)}`;
+}
 
 // ─── Signup (sends OTP, does NOT return token) ───
-router.post('/signup', async (req, res) => {
+router.post('/signup', handleSignupUploads, validateSignup, async (req, res) => {
     try {
         const data = req.body;
 
-        // Validate age (must be explicitly provided and >= 18)
-        if (!data.age || Number(data.age) < 18) {
-            return res.status(400).json({ message: 'You must be at least 18 years old to register' });
+        // Block superadmin registration (double check)
+        if (data.role === 'superadmin') {
+            return res.status(403).json({ message: 'Unauthorized role assignment' });
         }
-
-        if (data.role === 'admin') {
-            console.log('Admin signup attempt - Age:', data.age);
-        }
-
-        // Admin check removed to allow multiple admin signups
-
 
         // Require email for OTP
         if (!data.email) {
             return res.status(400).json({ message: 'Email is required for verification' });
         }
 
-        // Check if unverified user with same aadhar already exists
+        // Hash and mask Aadhaar
+        const rawAadhaar = data.aadharCardNumber.toString().replace(/\s/g, '');
+        const aadharHash = hashAadhaar(rawAadhaar);
+        const aadharMasked = maskAadhaar(rawAadhaar);
+
+        // Check for existing verified user with same Aadhaar hash
+        const existingVerified = await User.findOne({ aadharHash, isVerified: true });
+        if (existingVerified) {
+            return res.status(400).json({ message: 'An account with this Aadhaar number already exists' });
+        }
+
+        // Check unique email
+        const existingEmail = await User.findOne({ email: data.email, isVerified: true });
+        if (existingEmail) {
+            return res.status(400).json({ message: 'An account with this email already exists' });
+        }
+
+        // Check unique voter ID number
+        const existingVoterId = await User.findOne({ voterIdNumber: data.voterIdNumber, isVerified: true });
+        if (existingVoterId) {
+            return res.status(400).json({ message: 'An account with this Voter ID already exists' });
+        }
+
+        // Check if unverified user with same aadhar hash already exists
         const existingUnverified = await User.findOne({
-            aadharCardNumber: data.aadharCardNumber,
+            aadharHash,
             isVerified: false,
         });
         if (existingUnverified) {
@@ -75,15 +116,62 @@ router.post('/signup', async (req, res) => {
             console.log('Generated Voter ID:', data.voterId);
         }
 
-        const newUser = new User({
-            ...data,
+        // Build user object
+        const userData = {
+            name: data.name,
+            dob: new Date(data.dob),
+            gender: data.gender,
+            mobile: data.mobile,
+            email: data.email,
+            state: data.state,
+            district: data.district,
+            pincode: data.pincode,
+            address: data.address,
+            aadharHash,
+            aadharMasked,
+            voterIdNumber: data.voterIdNumber,
+            profilePhoto: req.uploadedProfilePhoto || null,
+            password: data.password,
+            role: data.role,
+            voterId: data.voterId || undefined,
+            adminId: data.adminId || undefined,
             otp,
             otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
             isVerified: false,
-        });
+        };
 
+        // Role-specific settings
+        if (data.role === 'voter') {
+            userData.constituency = data.constituency;
+            userData.citizenship = data.citizenship || 'Indian';
+            userData.termsAccepted = data.termsAccepted === 'true' || data.termsAccepted === true;
+            userData.isApproved = true;
+            userData.status = 'active';
+        } else if (data.role === 'admin') {
+            userData.isApproved = false;
+            userData.status = 'pending';
+        }
+
+        const newUser = new User(userData);
         const savedUser = await newUser.save();
         console.log('User saved (unverified):', savedUser.email);
+
+        // If admin, create AdminProfile
+        if (data.role === 'admin') {
+            const adminProfile = new AdminProfile({
+                userId: savedUser._id,
+                organizationName: data.organizationName,
+                officialEmail: data.officialEmail,
+                employeeId: data.employeeId,
+                designation: data.designation,
+                reasonForAccess: data.reasonForAccess,
+                verificationDocument: req.uploadedVerificationDoc || null,
+                linkedInUrl: data.linkedInUrl || null,
+                approvalStatus: 'pending',
+            });
+            await adminProfile.save();
+            console.log('Admin profile created for:', savedUser.email);
+        }
 
         // Send OTP email
         try {
@@ -99,6 +187,20 @@ router.post('/signup', async (req, res) => {
         });
     } catch (err) {
         console.log(err);
+        if (err.code === 11000) {
+            // Duplicate key error
+            const field = Object.keys(err.keyPattern)[0];
+            const fieldNames = {
+                aadharHash: 'Aadhaar number',
+                email: 'Email',
+                voterIdNumber: 'Voter ID',
+                voterId: 'System Voter ID',
+                adminId: 'System Admin ID',
+            };
+            return res.status(400).json({
+                message: `An account with this ${fieldNames[field] || field} already exists`
+            });
+        }
         res.status(500).json({ error: 'internal server error' });
     }
 });
@@ -135,7 +237,16 @@ router.post('/verify-otp', async (req, res) => {
         user.otpExpiry = null;
         await user.save();
 
-        // Generate token
+        // For admin accounts, don't generate token — they need approval first
+        if (user.role === 'admin') {
+            console.log('Admin verified (pending approval):', user.email);
+            return res.status(200).json({
+                pendingApproval: true,
+                message: 'Email verified! Your admin account is pending approval by a superadmin.',
+            });
+        }
+
+        // Generate token for voters
         const token = generateToken({ id: user.id });
 
         console.log('User verified:', user.email, 'ID:', user.role === 'admin' ? user.adminId : user.voterId);
@@ -184,15 +295,57 @@ router.post('/resend-otp', async (req, res) => {
     }
 });
 
-// ─── Login (blocks unverified users) ───
+// ─── Login (blocks unverified users & unapproved admins) ───
 router.post('/login', async (req, res) => {
     try {
         const { aadharCardNumber, password } = req.body;
 
-        const user = await User.findOne({ aadharCardNumber });
+        if (!aadharCardNumber || !password) {
+            return res.status(400).json({ error: 'Aadhaar number and password are required' });
+        }
 
-        if (!user || !(await user.comparePassword(password))) {
-            return res.status(401).json({ error: 'Invalid aadharCardNumber or Password' });
+        // Hash the incoming Aadhaar for lookup
+        const rawAadhaar = aadharCardNumber.toString().replace(/\s/g, '');
+        const aadharHash = hashAadhaar(rawAadhaar);
+
+        const user = await User.findOne({ aadharHash });
+
+        if (!user) {
+            return res.status(401).json({ error: 'Invalid Aadhaar number or Password' });
+        }
+
+        // Check account lockout
+        if (user.isLocked()) {
+            const lockMinutes = Math.ceil((user.lockUntil - Date.now()) / 60000);
+            return res.status(423).json({
+                error: `Account locked. Try again in ${lockMinutes} minute(s).`
+            });
+        }
+
+        // Verify password
+        const isMatch = await user.comparePassword(password);
+
+        if (!isMatch) {
+            // Track failed attempt
+            user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+            user.loginHistory.push({
+                ip: req.ip,
+                userAgent: req.headers['user-agent'],
+                timestamp: new Date(),
+                success: false,
+            });
+
+            // Lock after 5 failed attempts for 30 minutes
+            if (user.failedLoginAttempts >= 5) {
+                user.lockUntil = new Date(Date.now() + 30 * 60 * 1000);
+                await user.save();
+                return res.status(423).json({
+                    error: 'Too many failed attempts. Account locked for 30 minutes.'
+                });
+            }
+
+            await user.save();
+            return res.status(401).json({ error: 'Invalid Aadhaar number or Password' });
         }
 
         // Block unverified users
@@ -203,6 +356,39 @@ router.post('/login', async (req, res) => {
                 email: user.email,
             });
         }
+
+        // Block unapproved admins
+        if (user.role === 'admin' && !user.isApproved) {
+            return res.status(403).json({
+                error: 'Admin account pending approval.',
+                pendingApproval: true,
+            });
+        }
+
+        // Block rejected/suspended accounts
+        if (user.status === 'rejected') {
+            return res.status(403).json({ error: 'Your account has been rejected.' });
+        }
+        if (user.status === 'suspended') {
+            return res.status(403).json({ error: 'Your account has been suspended.' });
+        }
+
+        // Successful login — reset failed attempts
+        user.failedLoginAttempts = 0;
+        user.lockUntil = null;
+        user.loginHistory.push({
+            ip: req.ip,
+            userAgent: req.headers['user-agent'],
+            timestamp: new Date(),
+            success: true,
+        });
+
+        // Keep only last 20 login records
+        if (user.loginHistory.length > 20) {
+            user.loginHistory = user.loginHistory.slice(-20);
+        }
+
+        await user.save();
 
         const token = generateToken({ id: user.id });
         res.json({ token });
@@ -216,7 +402,7 @@ router.post('/login', async (req, res) => {
 router.get('/profile', jwtAuthMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).select('-password -otp -otpExpiry -aadharHash -loginHistory');
         res.status(200).json({ user });
     } catch (err) {
         console.log(err);

@@ -8,6 +8,58 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  dob: {
+    type: Date,
+    required: true
+  },
+  gender: {
+    type: String,
+    enum: ['male', 'female', 'other'],
+    required: true
+  },
+  mobile: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true
+  },
+  state: {
+    type: String,
+    required: true
+  },
+  district: {
+    type: String,
+    required: true
+  },
+  pincode: {
+    type: String,
+    required: true
+  },
+  address: {
+    type: String,
+    required: true
+  },
+  // Aadhaar stored securely — never store plain
+  aadharHash: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  aadharMasked: {
+    type: String,
+    required: true
+  },
+  voterIdNumber: {
+    type: String,
+    required: true,
+    unique: true
+  },
+  profilePhoto: {
+    type: String // Cloudinary URL
+  },
+  // System-generated IDs (kept for backward compatibility)
   voterId: {
     type: String,
     unique: true,
@@ -18,44 +70,40 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true
   },
-  age: {
-    type: Number,
-    required: true,
-    min: 18
-  },
-
-  mobile: {
-    type: String,
-
-  },
-
-  email: {
-    type: String,
-  },
-
-  address: {
-    type: String,
-    required: true
-  },
-
-  aadharCardNumber: {
-    type: Number,
-    required: true,
-    unique: true
-  },
   password: {
     type: String,
     required: true
   },
   role: {
-    enum: ['voter', 'admin'],
+    enum: ['voter', 'admin', 'superadmin'],
     type: String,
     default: 'voter'
-
   },
+  // Voter-specific fields
+  constituency: {
+    type: String
+  },
+  citizenship: {
+    type: String,
+    default: 'Indian'
+  },
+  termsAccepted: {
+    type: Boolean,
+    default: false
+  },
+  // Verification & approval
   isVerified: {
     type: Boolean,
     default: false
+  },
+  isApproved: {
+    type: Boolean,
+    default: true // true for voters, false for admin signups
+  },
+  status: {
+    type: String,
+    enum: ['active', 'pending', 'rejected', 'suspended'],
+    default: 'active'
   },
   otp: {
     type: String,
@@ -65,11 +113,25 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  // Security tracking
+  loginHistory: [{
+    ip: String,
+    userAgent: String,
+    timestamp: { type: Date, default: Date.now },
+    success: Boolean
+  }],
+  failedLoginAttempts: {
+    type: Number,
+    default: 0
+  },
+  lockUntil: {
+    type: Date
+  },
   votedElections: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'election'
   }]
-})
+}, { timestamps: true });
 
 userSchema.pre('save', async function (next) {
   const user = this;
@@ -103,6 +165,14 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
     throw err;
   }
 }
+
+/**
+ * Check if account is currently locked
+ */
+userSchema.methods.isLocked = function () {
+  return !!(this.lockUntil && this.lockUntil > Date.now());
+};
+
 // create user model
 const user = mongoose.model('user', userSchema);
 module.exports = user;

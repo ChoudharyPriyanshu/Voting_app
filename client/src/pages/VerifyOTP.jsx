@@ -69,6 +69,14 @@ export default function VerifyOTP() {
         setLoading(true);
         try {
             const { data } = await api.post('/user/verify-otp', { email, otp: code });
+
+            // Admin accounts need approval — don't auto-login
+            if (data.pendingApproval) {
+                toast.success('Email verified! Your admin account is pending approval.');
+                navigate('/login');
+                return;
+            }
+
             localStorage.setItem('voting_token', data.token);
             toast.success('Email verified successfully!');
             await refreshProfile();

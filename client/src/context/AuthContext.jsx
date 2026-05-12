@@ -30,13 +30,20 @@ export function AuthProvider({ children }) {
     }, [fetchProfile]);
 
     const login = async (aadharCardNumber, password) => {
-        const { data } = await api.post('/user/login', { aadharCardNumber: Number(aadharCardNumber), password });
+        const { data } = await api.post('/user/login', { aadharCardNumber, password });
 
         // If needs verification, throw with email info
         if (data.needsVerification) {
             const err = new Error('Email not verified');
             err.needsVerification = true;
             err.email = data.email;
+            throw err;
+        }
+
+        // If pending approval
+        if (data.pendingApproval) {
+            const err = new Error('Admin account pending approval');
+            err.pendingApproval = true;
             throw err;
         }
 
@@ -49,12 +56,11 @@ export function AuthProvider({ children }) {
         return profile.data.user;
     };
 
-    const signup = async (userData) => {
-        const { data } = await api.post('/user/signup', {
-            ...userData,
-            aadharCardNumber: Number(userData.aadharCardNumber),
-            age: Number(userData.age),
-        });
+    const signup = async (formData) => {
+        // formData can be FormData (multipart) or plain object
+        const isFormData = formData instanceof FormData;
+        const config = isFormData ? { headers: { 'Content-Type': 'multipart/form-data' } } : {};
+        const { data } = await api.post('/user/signup', formData, config);
         // New flow: signup returns needsVerification, not token
         return data;
     };
@@ -89,7 +95,8 @@ export function AuthProvider({ children }) {
         token,
         loading,
         isAuthenticated: !!token && !!user,
-        isAdmin: user?.role === 'admin',
+        isAdmin: user?.role === 'admin' || user?.role === 'superadmin',
+        isSuperAdmin: user?.role === 'superadmin',
         login,
         signup,
         logout,

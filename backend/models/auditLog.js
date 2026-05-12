@@ -8,6 +8,9 @@ const auditLogSchema = new mongoose.Schema({
             'election_created', 'election_updated', 'election_deleted',
             'candidate_added', 'candidate_updated', 'candidate_deleted',
             'election_status_changed',
+            'admin_approved', 'admin_rejected',
+            'login_success', 'login_failed', 'login_locked',
+            'user_registered',
         ],
     },
     adminId: {

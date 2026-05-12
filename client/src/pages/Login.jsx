@@ -5,12 +5,26 @@ import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { Vote, Eye, EyeOff } from 'lucide-react';
 
+function maskAadhaarDisplay(val) {
+    const d = val.replace(/\D/g, '').slice(0, 12);
+    if (d.length <= 4) return d;
+    if (d.length <= 8) return d.slice(0, 4) + '-' + d.slice(4);
+    return d.slice(0, 4) + '-' + d.slice(4, 8) + '-' + d.slice(8);
+}
+
 export default function Login() {
     const { login } = useAuth();
     const navigate = useNavigate();
+    const [rawAadhaar, setRawAadhaar] = useState('');
     const [form, setForm] = useState({ aadharCardNumber: '', password: '' });
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const handleAadhaarChange = (e) => {
+        const raw = e.target.value.replace(/\D/g, '').slice(0, 12);
+        setRawAadhaar(raw);
+        setForm(prev => ({ ...prev, aadharCardNumber: raw }));
+    };
 
     const handleChange = (e) => {
         setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -27,9 +41,16 @@ export default function Login() {
         setLoading(true);
         try {
             const user = await login(form.aadharCardNumber, form.password);
-            navigate(user.role === 'admin' ? '/admin/candidates' : '/dashboard');
+            navigate(user.role === 'admin' || user.role === 'superadmin' ? '/admin/candidates' : '/dashboard');
         } catch (err) {
-            toast.error(err.response?.data?.error || 'Login failed. Please try again.');
+            if (err.pendingApproval) {
+                toast.error('Admin account pending approval. Please wait for superadmin review.');
+            } else if (err.needsVerification) {
+                toast.error('Please verify your email first.');
+                navigate('/verify-otp', { state: { email: err.email } });
+            } else {
+                toast.error(err.response?.data?.error || 'Login failed. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
@@ -63,7 +84,7 @@ export default function Login() {
                         Welcome Back
                     </h1>
                     <p className="text-text-muted text-sm">
-                        Sign in with your Aadhar Card Number
+                        Sign in with your Aadhaar Number
                     </p>
                 </div>
 
@@ -73,22 +94,21 @@ export default function Login() {
                     noValidate
                 >
 
-
-                    {/* Aadhar */}
+                    {/* Aadhaar */}
                     <div>
                         <label htmlFor="aadharCardNumber" className="block text-sm font-medium text-text-muted mb-1.5">
-                            Aadhar Card Number
+                            Aadhaar Number
                         </label>
                         <input
                             id="aadharCardNumber"
                             name="aadharCardNumber"
                             type="text"
                             inputMode="numeric"
-                            maxLength={12}
-                            value={form.aadharCardNumber}
-                            onChange={handleChange}
-                            placeholder="Enter 12-digit Aadhar number"
-                            className="w-full px-4 py-3 rounded-xl border border-border bg-surface-light/40 text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all duration-200 text-sm"
+                            maxLength={14}
+                            value={maskAadhaarDisplay(rawAadhaar)}
+                            onChange={handleAadhaarChange}
+                            placeholder="XXXX-XXXX-XXXX"
+                            className="w-full px-4 py-3 rounded-xl border border-border bg-surface-light/40 text-text placeholder:text-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all duration-200 text-sm tracking-wider"
                             autoComplete="username"
                         />
                     </div>
