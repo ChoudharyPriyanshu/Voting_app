@@ -49,6 +49,17 @@ export default function Profile() {
         }
     };
 
+    // Calculate age dynamically from DOB
+    const calculateAge = (dob) => {
+        if (!dob) return '—';
+        const birthDate = new Date(dob);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+        return age;
+    };
+
     const profileFields = [
         { icon: User, label: 'Full Name', value: user?.name },
         { 
@@ -56,11 +67,11 @@ export default function Profile() {
             label: user?.role === 'admin' ? 'Admin ID' : 'Voter ID', 
             value: user?.role === 'admin' ? user?.adminId : user?.voterId 
         },
-        { icon: Calendar, label: 'Age', value: user?.age },
+        { icon: Calendar, label: 'Age', value: calculateAge(user?.dob) },
         { icon: Mail, label: 'Email', value: user?.email || '—' },
         { icon: Phone, label: 'Mobile', value: user?.mobile || '—' },
-        { icon: MapPin, label: 'Address', value: user?.address },
-        { icon: CreditCard, label: 'Aadhar Card', value: user?.aadharCardNumber ? `XXXX-XXXX-${String(user.aadharCardNumber).slice(-4)}` : '—' },
+        { icon: MapPin, label: 'Address', value: user?.address, wrap: true },
+        { icon: CreditCard, label: 'Aadhar Card', value: user?.aadharMasked || '—' },
         { icon: Shield, label: 'Role', value: user?.role === 'admin' ? 'Administrator' : 'Voter' },
     ];
 
@@ -120,14 +131,14 @@ export default function Profile() {
 
                     {/* Fields */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        {profileFields.map(({ icon: Icon, label, value }) => (
-                            <div key={label} className="flex items-start gap-3">
+                        {profileFields.map(({ icon: Icon, label, value, wrap }) => (
+                            <div key={label} className={`flex items-start gap-3 min-w-0${wrap ? ' sm:col-span-2' : ''}`}>
                                 <div className="w-9 h-9 rounded-lg bg-surface-light/60 flex items-center justify-center shrink-0 mt-0.5">
                                     <Icon className="w-4 h-4 text-text-muted" />
                                 </div>
-                                <div>
+                                <div className="min-w-0 flex-1">
                                     <p className="text-xs text-text-muted mb-0.5">{label}</p>
-                                    <p className="text-sm font-medium">{value}</p>
+                                    <p className={`text-sm font-medium${wrap ? ' break-words whitespace-normal' : ''}`}>{value}</p>
                                 </div>
                             </div>
                         ))}

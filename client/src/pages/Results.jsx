@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { BarChart3, Trophy, RefreshCw, TrendingUp, Clock } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const barColors = [
     { bar: 'linear-gradient(90deg, #6366f1, #818cf8)', glow: 'rgba(99, 102, 241, 0.3)' },
